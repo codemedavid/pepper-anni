@@ -7,14 +7,16 @@ import { useCouriers } from '../hooks/useCouriers';
 import { supabase } from '../lib/supabase';
 import { useImageUpload } from '../hooks/useImageUpload';
 import posthog, { identifyUser } from '../lib/posthog';
+import { saveOrder } from '../lib/orderHistory';
 
 interface CheckoutProps {
     cartItems: CartItem[];
     totalPrice: number;
     onBack: () => void;
+    clearCart: () => void;
 }
 
-const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) => {
+const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, clearCart }) => {
     const { paymentMethods } = usePaymentMethods();
     const { locations: shippingLocations } = useShippingLocations();
     const { couriers } = useCouriers();
@@ -329,6 +331,20 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
 
             console.log('✅ Order saved to database:', orderData);
 
+            // Save a lightweight copy to localStorage so the customer can re-track it
+            // from the "Track Your Order" page without remembering the order number.
+            saveOrder({
+                id: orderData?.id || '',
+                order_number: customOrderNumber,
+                total: finalTotal,
+                item_count: orderItems.length,
+                items_summary: orderItems
+                    .map(item => `${item.quantity}x ${item.product_name}`)
+                    .join(', '),
+                status: 'new',
+                created_at: orderData?.created_at || new Date().toISOString(),
+            });
+
             // Build item descriptions for email
             const items_description = orderItems.map(item =>
                 `${item.quantity}x ${item.product_name}${item.variation_name ? ` - ${item.variation_name}` : ''} (₱${item.price.toLocaleString('en-PH', { minimumFractionDigits: 2 })})`
@@ -430,7 +446,7 @@ ${paymentMethod?.name || 'N/A'}
 ${paymentProofUrl ? 'Screenshot attached to order.' : 'Pending'}
 
 📱 CONTACT METHOD
-WhatsApp (+63 994 921 8204)
+WhatsApp (+63 947 506 7148)
 
 📋 ORDER NUMBER: ${customOrderNumber}
 
@@ -438,6 +454,9 @@ Please confirm this order. Thank you!
       `.trim();
 
             setOrderMessage(orderDetails);
+
+            // Order is successfully saved — clear the cart so it's empty after checkout
+            clearCart();
 
             // Auto-copy to clipboard
             try {
@@ -468,7 +487,7 @@ Please confirm this order. Thank you!
     };
 
     const handleOpenContact = () => {
-        const contactUrl = `https://wa.me/639949218204?text=${encodeURIComponent(orderMessage)}`;
+        const contactUrl = `https://wa.me/639475067148?text=${encodeURIComponent(orderMessage)}`;
         window.open(contactUrl, '_blank');
     };
 
@@ -547,7 +566,7 @@ Please confirm this order. Thank you!
 
                             {!contactOpened && (
                                 <p className="text-sm text-gray-500">
-                                    If the app doesn't open automatically (or shows an invalid address error), please ensure WhatsApp is installed, or manually send the copied message to <span className="font-bold">+63 994 921 8204 on WhatsApp</span>
+                                    If the app doesn't open automatically (or shows an invalid address error), please ensure WhatsApp is installed, or manually send the copied message to <span className="font-bold">+63 947 506 7148 on WhatsApp</span>
                                 </p>
                             )}
                         </div>
@@ -951,7 +970,7 @@ Please confirm this order. Thank you!
                                 </div>
                                 <div className="text-left">
                                     <p className="font-bold text-charcoal-900 text-sm">WhatsApp</p>
-                                    <p className="text-xs text-gray-500">+63 994 921 8204</p>
+                                    <p className="text-xs text-gray-500">+63 947 506 7148</p>
                                 </div>
                             </div>
                         </div>

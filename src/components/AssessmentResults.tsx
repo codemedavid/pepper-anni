@@ -462,7 +462,7 @@ const AssessmentResults: React.FC = () => {
             Browse Our Products
           </a>
           <p className="text-xs text-charcoal-400">
-            Have questions? Contact us via Viber or WhatsApp at <strong>0949 613 3242</strong>
+            Have questions? Contact us via Viber or WhatsApp at <strong>0947 506 7148</strong>
           </p>
         </div>
       </div>

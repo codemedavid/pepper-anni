@@ -1,0 +1,11 @@
+project_id = "wdebbxcykvztyxfrrrxp"
+
+# Telegram order bot edge functions.
+# These are called by Postgres (pg_net) and by Telegram, neither of which can send
+# a Supabase JWT — they authenticate with their own shared-secret headers instead.
+# verify_jwt MUST stay false or the gateway 401s every request before the handler runs.
+[functions.telegram-order-sync]
+verify_jwt = false
+
+[functions.telegram-webhook]
+verify_jwt = false

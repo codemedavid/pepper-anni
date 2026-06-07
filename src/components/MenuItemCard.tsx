@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package } from 'lucide-react';
+import { Package, Plus } from 'lucide-react';
 import type { Product, ProductVariation } from '../types';
 
 interface MenuItemCardProps {
@@ -23,7 +23,6 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
 
   // Calculate current price considering both product and variation discounts
   const currentPrice = (() => {
-    // Falls back to variation or product price
     return selectedVariation
       ? (selectedVariation.discount_active && selectedVariation.discount_price)
         ? selectedVariation.discount_price
@@ -33,61 +32,56 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
         : product.base_price;
   })();
 
-  // Check if there's an active discount
   const hasDiscount = selectedVariation
     ? (selectedVariation.discount_active && selectedVariation.discount_price !== null)
     : (product.discount_active && product.discount_price !== null);
 
-  // Get original price for strikethrough
   const originalPrice = selectedVariation ? selectedVariation.price : product.base_price;
 
-  // Check if product has any available stock (either in variations or product itself)
   const hasAnyStock = product.variations && product.variations.length > 0
     ? product.variations.some(v => v.stock_quantity > 0)
     : product.stock_quantity > 0;
 
+  const isUnavailable = !product.available || !hasAnyStock;
+
+  const formatPrice = (value: number) =>
+    value.toLocaleString('en-PH', { minimumFractionDigits: 0 });
+
   return (
-    <div className="card h-full flex flex-col group relative">
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-brand-100 bg-warm-white transition-all duration-300 hover:border-brand-200 hover:shadow-soft">
       {/* Click overlay for product details */}
       <div
         onClick={() => onProductClick?.(product)}
-        className="absolute inset-x-0 top-0 h-28 sm:h-44 z-10 cursor-pointer"
+        className="absolute inset-x-0 top-0 z-10 h-32 cursor-pointer sm:h-48"
         title="View details"
       />
 
       {/* Product Image */}
-      <div className="relative h-28 sm:h-44 bg-secondary-50 overflow-hidden border-b border-gray-50">
+      <div className="relative h-32 overflow-hidden bg-brand-50 sm:h-48">
         {product.image_url && !imageError ? (
           <img
             src={product.image_url}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-charcoal-200 bg-charcoal-50">
-            <Package className="w-16 h-16 opacity-50" />
+          <div className="flex h-full w-full items-center justify-center text-brand-200">
+            <Package className="h-12 w-12 opacity-60" strokeWidth={1.25} />
           </div>
         )}
 
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2 pointer-events-none z-20">
-          {product.featured && (
-            <span className="px-2 py-1 bg-brand-600 text-white text-[10px] font-bold uppercase tracking-wider rounded shadow-sm">
-              Featured
-            </span>
-          )}
-          {hasDiscount && (
-            <span className="px-2 py-1 bg-brand-600 text-white text-[10px] font-bold rounded shadow-sm">
-              {Math.round((1 - currentPrice / originalPrice) * 100)}% OFF
-            </span>
-          )}
-        </div>
+        {/* Discount badge — the only overlay we keep */}
+        {hasDiscount && !isUnavailable && (
+          <span className="absolute left-2.5 top-2.5 z-20 rounded-full bg-brand-600 px-2 py-1 text-[10px] font-bold tracking-wide text-white sm:left-3 sm:top-3">
+            {Math.round((1 - currentPrice / originalPrice) * 100)}% OFF
+          </span>
+        )}
 
         {/* Stock Status Overlay */}
-        {(!product.available || !hasAnyStock) && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] flex items-center justify-center z-20">
-            <span className="bg-gray-100 text-gray-500 px-3 py-1 text-xs font-bold rounded border border-gray-200 uppercase tracking-wide">
+        {isUnavailable && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-warm-white/75 backdrop-blur-[2px]">
+            <span className="rounded-full border border-charcoal-200 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-charcoal-500">
               {!product.available ? 'Unavailable' : 'Out of Stock'}
             </span>
           </div>
@@ -95,122 +89,88 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
       </div>
 
       {/* Product Details */}
-      <div className="p-4 sm:p-5 flex-1 flex flex-col">
+      <div className="flex flex-1 flex-col p-3.5 sm:p-5">
         <h3
           onClick={() => onProductClick?.(product)}
-          className="font-heading font-semibold text-charcoal-900 text-sm sm:text-base mb-1 line-clamp-2 tracking-tight cursor-pointer relative z-20"
+          className="relative z-20 mb-2 line-clamp-2 cursor-pointer font-heading text-base font-semibold leading-tight tracking-tight text-charcoal-900 transition-colors group-hover:text-brand-700 sm:text-xl"
           title="View details"
         >
           {product.name}
         </h3>
-        <p className="text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3 line-clamp-2 min-h-[1.5rem] sm:min-h-[2.5rem] leading-relaxed">
-          {product.description}
-        </p>
 
         {/* Variations (Sizes) */}
-        <div className="mb-2 sm:mb-4 min-h-[1.5rem] sm:min-h-[2rem]">
-          {product.variations && product.variations.length > 0 && (
-            <div className="flex flex-wrap gap-1 sm:gap-2">
-              {product.variations.slice(0, 2).map((variation) => {
-                const isOutOfStock = variation.stock_quantity === 0;
-                return (
-                  <button
-                    key={variation.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isOutOfStock) {
-                        setSelectedVariation(variation);
-                      }
-                    }}
-                    disabled={isOutOfStock}
-                    className={`
-                      px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-medium rounded-lg border transition-all duration-200 relative z-20
-                      ${selectedVariation?.id === variation.id && !isOutOfStock
-                        ? 'bg-brand-50 border-brand-400 text-brand-700'
-                        : isOutOfStock
-                          ? 'bg-charcoal-50 text-charcoal-300 border-charcoal-100 cursor-not-allowed'
-                          : 'bg-white text-charcoal-600 border-charcoal-200 hover:border-brand-300 hover:text-brand-600'
-                      }
-                    `}
-                  >
-                    {variation.name}
-                  </button>
-                );
-              })}
-              {product.variations.length > 2 && (
-                <span className="text-[9px] sm:text-[10px] text-gray-400 self-center">
-                  +{product.variations.length - 2}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-
+        {product.variations && product.variations.length > 0 && (
+          <div className="mb-3 flex flex-wrap items-center gap-1.5">
+            {product.variations.slice(0, 2).map((variation) => {
+              const isOutOfStock = variation.stock_quantity === 0;
+              const isSelected = selectedVariation?.id === variation.id && !isOutOfStock;
+              return (
+                <button
+                  key={variation.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isOutOfStock) setSelectedVariation(variation);
+                  }}
+                  disabled={isOutOfStock}
+                  className={`relative z-20 rounded-full border px-2.5 py-1 text-[10px] font-medium transition-all duration-200 sm:text-xs ${
+                    isSelected
+                      ? 'border-brand-500 bg-brand-50 text-brand-700'
+                      : isOutOfStock
+                        ? 'cursor-not-allowed border-charcoal-100 bg-charcoal-50 text-charcoal-300 line-through'
+                        : 'border-charcoal-200 bg-white text-charcoal-600 hover:border-brand-300'
+                  }`}
+                >
+                  {variation.name}
+                </button>
+              );
+            })}
+            {product.variations.length > 2 && (
+              <span className="self-center text-[10px] font-medium text-charcoal-300">
+                +{product.variations.length - 2}
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="flex-1" />
 
-        {/* Price and Cart Actions */}
-        <div className="flex flex-col gap-2 sm:gap-3 mt-auto">
-          {hasDiscount ? (
-            <div
-              onClick={() => onProductClick?.(product)}
-              className="flex items-baseline gap-1 sm:gap-2 cursor-pointer relative z-20"
-              title="View details"
-            >
-              <span className="text-base sm:text-lg font-semibold text-charcoal-900">
-                ₱{currentPrice.toLocaleString('en-PH', { minimumFractionDigits: 0 })}
-              </span>
-              <span className="text-[10px] sm:text-xs text-charcoal-400 line-through">
-                ₱{originalPrice.toLocaleString('en-PH', { minimumFractionDigits: 0 })}
-              </span>
-            </div>
-          ) : (
-            <div
-              onClick={() => onProductClick?.(product)}
-              className="flex items-baseline cursor-pointer relative z-20 w-fit"
-              title="View details"
-            >
-              <span className="text-base sm:text-lg font-semibold text-charcoal-900">
-                ₱{currentPrice.toLocaleString('en-PH', { minimumFractionDigits: 0 })}
-              </span>
-            </div>
-          )}
-
-          <div className="flex w-full pt-2">
-            {/* Add to Cart Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!product.available || !hasAnyStock) return;
-
-                // If it has variations, ensure one is selected
-                if (product.variations && product.variations.length > 0 && !selectedVariation) {
-                  onProductClick?.(product);
-                  return;
-                }
-
-                onAddToCart?.(product, selectedVariation, 1);
-              }}
-              disabled={!product.available || !hasAnyStock}
-              className={`w-full py-2 sm:py-3 px-2 text-[11px] sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 font-semibold whitespace-nowrap transition-all
-                ${(!product.available || !hasAnyStock)
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed rounded'
-                  : 'btn-primary'}
-              `}
-            >
-              <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span>Add to Cart</span>
-            </button>
-          </div>
-
-          {/* Cart Status */}
-          {cartQuantity > 0 && (
-            <div className="text-center text-[10px] text-emerald-600 font-medium bg-emerald-100/50 rounded py-1">
-              {cartQuantity} in cart
-            </div>
+        {/* Price */}
+        <div
+          onClick={() => onProductClick?.(product)}
+          className="relative z-20 mb-3 flex w-fit cursor-pointer items-baseline gap-2"
+          title="View details"
+        >
+          <span className="font-heading text-xl font-semibold tracking-tight text-charcoal-900 sm:text-2xl">
+            ₱{formatPrice(currentPrice)}
+          </span>
+          {hasDiscount && (
+            <span className="text-[11px] text-charcoal-300 line-through sm:text-xs">
+              ₱{formatPrice(originalPrice)}
+            </span>
           )}
         </div>
+
+        {/* Add to Cart Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isUnavailable) return;
+            if (product.variations && product.variations.length > 0 && !selectedVariation) {
+              onProductClick?.(product);
+              return;
+            }
+            onAddToCart?.(product, selectedVariation, 1);
+          }}
+          disabled={isUnavailable}
+          className={`relative z-20 flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold tracking-wide transition-all duration-300 sm:text-sm ${
+            isUnavailable
+              ? 'cursor-not-allowed bg-charcoal-50 text-charcoal-300'
+              : 'bg-charcoal-900 text-cream hover:bg-brand-600 active:scale-[0.98]'
+          }`}
+        >
+          <Plus className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={2.5} />
+          <span>{cartQuantity > 0 ? `In Cart (${cartQuantity})` : 'Add to Cart'}</span>
+        </button>
       </div>
     </div>
   );

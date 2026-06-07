@@ -124,6 +124,7 @@ const defaultProps = {
   cartItems,
   totalPrice: 3000, // 1500 * 2
   onBack: vi.fn(),
+  clearCart: vi.fn(),
 };
 
 describe('Checkout', () => {

@@ -237,6 +237,35 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
       setIsProcessing(true);
+      const order = orders.find(o => o.id === orderId);
+
+      // Restock inventory when cancelling a confirmed/processing order (stock was
+      // already deducted at confirm). Mirrors the Telegram bot's tg_cancel_order so
+      // both channels behave identically. A 'new' -> cancelled order never restocks.
+      if (newStatus === 'cancelled' && order && (order.order_status === 'confirmed' || order.order_status === 'processing')) {
+        for (const item of order.order_items) {
+          if (item.variation_id) {
+            const { data: variation } = await supabase
+              .from('product_variations').select('stock_quantity').eq('id', item.variation_id).single();
+            if (variation) {
+              await supabase.from('product_variations')
+                .update({ stock_quantity: variation.stock_quantity + item.quantity })
+                .eq('id', item.variation_id);
+            }
+          } else {
+            const { data: product } = await supabase
+              .from('products').select('stock_quantity').eq('id', item.product_id).single();
+            if (product) {
+              await supabase.from('products')
+                .update({ stock_quantity: product.stock_quantity + item.quantity })
+                .eq('id', item.product_id);
+            }
+          }
+        }
+        await refreshProducts();
+        window.dispatchEvent(new CustomEvent('orderConfirmed'));
+      }
+
       const { error } = await supabase
         .from('orders')
         .update({
@@ -247,7 +276,6 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
 
       if (error) throw error;
 
-      const order = orders.find(o => o.id === orderId);
       const eventMap: Record<string, string> = {
         processing: 'tbs_order_processing',
         shipped: 'tbs_order_shipped',

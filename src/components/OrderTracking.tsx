@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Search, Package, Truck, CheckCircle, Clock, AlertCircle, ArrowRight, ExternalLink, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Package, Truck, CheckCircle, Clock, AlertCircle, ArrowRight, ExternalLink, ArrowLeft, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import posthog from '../lib/posthog';
+import { getSavedOrders, updateOrderStatus, removeSavedOrder, isPending, type SavedOrder } from '../lib/orderHistory';
 
 interface TrackingOrder {
     id: string;
@@ -28,11 +29,17 @@ const OrderTracking: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
+    const [savedOrders, setSavedOrders] = useState<SavedOrder[]>([]);
 
-    const handleTrack = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!orderId.trim()) return;
+    useEffect(() => {
+        setSavedOrders(getSavedOrders());
+    }, []);
 
+    const trackOrder = async (rawId: string) => {
+        const id = rawId.trim();
+        if (!id) return;
+
+        setOrderId(id);
         setLoading(true);
         setError(null);
         setOrder(null);
@@ -42,7 +49,7 @@ const OrderTracking: React.FC = () => {
             // Use secure RPC function to fetch order
             const { data, error } = await supabase
                 .rpc('get_order_details', {
-                    order_id_input: orderId.trim()
+                    order_id_input: id
                 })
                 .single();
 
@@ -56,7 +63,13 @@ const OrderTracking: React.FC = () => {
                 }
             } else if (data) {
                 // RPC returns the row directly when using single()
-                setOrder(data as TrackingOrder);
+                const trackingOrder = data as TrackingOrder;
+                setOrder(trackingOrder);
+                // Keep the locally-saved status in sync with the latest from the server.
+                if (trackingOrder.order_number) {
+                    updateOrderStatus(trackingOrder.order_number, trackingOrder.order_status);
+                    setSavedOrders(getSavedOrders());
+                }
                 posthog.capture('tbs_order_tracked', {
                     order_number: data.order_number,
                     order_status: data.order_status,
@@ -70,6 +83,35 @@ const OrderTracking: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleTrack = (e: React.FormEvent) => {
+        e.preventDefault();
+        trackOrder(orderId);
+    };
+
+    const handleRemoveSaved = (e: React.MouseEvent, orderNumber: string) => {
+        e.stopPropagation();
+        removeSavedOrder(orderNumber);
+        setSavedOrders(getSavedOrders());
+    };
+
+    const statusLabel = (status: string) => {
+        const map: Record<string, string> = {
+            new: 'Order Placed',
+            confirmed: 'Confirmed',
+            processing: 'Processing',
+            shipped: 'Shipped',
+            delivered: 'Delivered',
+            cancelled: 'Cancelled',
+        };
+        return map[status] || status;
+    };
+
+    const statusBadgeClass = (status: string) => {
+        if (status === 'cancelled') return 'bg-red-100 text-red-700';
+        if (status === 'delivered') return 'bg-green-100 text-green-700';
+        return 'bg-gold-100 text-gold-700';
     };
 
     const getStatusStep = (status: string) => {
@@ -131,6 +173,62 @@ const OrderTracking: React.FC = () => {
                         </button>
                     </form>
                 </div>
+
+                {/* Saved Orders (from this device) */}
+                {savedOrders.length > 0 && (
+                    <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8 border border-gray-100">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-navy-900 flex items-center gap-2">
+                                <Package className="w-5 h-5 text-gold-600" />
+                                Your Orders
+                            </h2>
+                            {savedOrders.some(o => isPending(o.status)) && (
+                                <span className="text-xs font-semibold bg-gold-100 text-gold-700 px-3 py-1 rounded-full">
+                                    {savedOrders.filter(o => isPending(o.status)).length} pending
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-sm text-gray-500 mb-4">Orders you placed on this device. Tap any order to check its latest status.</p>
+                        <div className="space-y-3">
+                            {savedOrders.map((o) => (
+                                <button
+                                    key={o.order_number}
+                                    onClick={() => trackOrder(o.order_number)}
+                                    className="w-full text-left bg-gray-50 hover:bg-gold-50/40 border border-gray-200 hover:border-gold-300 rounded-xl p-4 transition-all flex items-center justify-between gap-3 group"
+                                >
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-mono font-bold text-navy-900">{o.order_number}</span>
+                                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusBadgeClass(o.status)}`}>
+                                                {statusLabel(o.status)}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-600 truncate">{o.items_summary}</p>
+                                        <p className="text-xs text-gray-400 mt-0.5">
+                                            {new Date(o.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            {' · '}₱{o.total.toLocaleString()}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <span className="hidden sm:flex items-center gap-1 text-sm font-semibold text-teal-600 group-hover:text-teal-700">
+                                            Track
+                                            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                                        </span>
+                                        <span
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={(e) => handleRemoveSaved(e, o.order_number)}
+                                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                            aria-label="Remove from list"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </span>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Results */}
                 {error && (
