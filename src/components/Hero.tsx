@@ -18,7 +18,7 @@ const Hero: React.FC<HeroProps> = ({ onShopAll }) => {
       {/* Background — botanical zen veil */}
       <div className="absolute inset-0 bg-gradient-to-b from-cream via-brand-50/40 to-cream" />
       <div className="absolute inset-0 pointer-events-none opacity-[0.08]" style={{
-        backgroundImage: 'radial-gradient(circle at 20% 20%, #4A8478 0px, transparent 1px), radial-gradient(circle at 80% 60%, #0F2A3F 0px, transparent 1px)',
+        backgroundImage: 'radial-gradient(circle at 20% 20%, #C53A6E 0px, transparent 1px), radial-gradient(circle at 80% 60%, #8A1E49 0px, transparent 1px)',
         backgroundSize: '48px 48px, 64px 64px',
       }} />
 
@@ -47,18 +47,18 @@ const Hero: React.FC<HeroProps> = ({ onShopAll }) => {
 
           <div className="inline-flex items-center gap-2 mb-6 self-start">
             <span className="h-px w-8 bg-brand-500" />
-            <span className="text-[11px] tracking-[0.3em] uppercase text-brand-600 font-medium">Zen Labs · Est. 2024</span>
+            <span className="text-[11px] tracking-[0.3em] uppercase text-brand-600 font-medium">Biohacking · Est. 2024</span>
           </div>
 
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-heading font-medium mb-4 leading-[1.05] tracking-tight">
-            <span className="text-zellor-gradient">Zellor</span>
+            <span className="text-pepper-gradient">PepperAnni</span>
           </h1>
           <h2 className="text-base md:text-lg font-sans font-medium text-charcoal-700 mb-8 tracking-[0.35em] uppercase">
-            Botanical &middot; Biotech &middot; Balance
+            Glow Smarter &middot; Live Longer
           </h2>
 
           <p className="text-lg md:text-xl text-charcoal-600 mb-10 leading-relaxed font-light max-w-xl">
-            Research-grade peptides crafted with the precision of science and the calm of nature. Each formulation, lab-tested for purity and intention.
+            Research-grade peptides engineered for biohackers and longevity seekers. Each formulation is lab-tested for purity — so you can glow smarter and live longer.
           </p>
 
           {/* Action Buttons */}
@@ -70,17 +70,7 @@ const Hero: React.FC<HeroProps> = ({ onShopAll }) => {
               Explore Peptides
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
-            <a
-              href="/assessment"
-              className="btn-secondary w-full sm:w-auto flex items-center justify-center"
-            >
-              Take Assessment
-            </a>
           </div>
-
-          <p className="mt-5 text-sm text-charcoal-500 italic font-serif">
-            Not sure where to begin? <a href="/assessment" className="font-medium text-brand-700 not-italic underline-offset-4 hover:underline">Take our assessment</a> for a personalized recommendation.
-          </p>
 
           {/* Trust Indicators */}
           <div className="mt-12 flex flex-wrap gap-x-8 gap-y-4 border-t border-brand-100 pt-8">
@@ -88,7 +78,7 @@ const Hero: React.FC<HeroProps> = ({ onShopAll }) => {
               { icon: Shield, label: '99% Purity Guaranteed' },
               { icon: FlaskConical, label: 'Lab Tested' },
               { icon: Award, label: 'Premium Grade' },
-              { icon: Leaf, label: 'Zen-Crafted' },
+              { icon: Leaf, label: 'Longevity-Focused' },
             ].map((item, idx) => (
               <div key={idx} className="flex items-center gap-2 text-sm font-medium text-charcoal-700">
                 <item.icon className="w-4 h-4 text-brand-500" strokeWidth={1.5} />
@@ -133,13 +123,13 @@ const Hero: React.FC<HeroProps> = ({ onShopAll }) => {
 
             <div className="relative z-10 flex flex-col items-center text-center px-8">
               <div className="font-heading text-[120px] leading-none font-medium text-white tracking-tight">
-                7L
+                PA
               </div>
               <div className="mt-8 font-heading text-3xl text-white tracking-[0.2em]">
-                ZELLOR
+                PepperAnni
               </div>
-              <div className="mt-2 text-[11px] text-brand-100 tracking-[0.4em] font-medium">
-                ZEN LABS
+              <div className="mt-2 text-[11px] text-brand-100 tracking-[0.3em] font-medium">
+                GLOW SMARTER · LIVE LONGER
               </div>
             </div>
           </div>

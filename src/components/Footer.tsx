@@ -24,17 +24,17 @@ const Footer: React.FC = () => {
           <div className="flex flex-col items-center md:items-start gap-4">
             <div className="flex items-center gap-3">
               <img
-                src="/logo.jpg"
-                alt="Zellor Zen Labs"
-                className="h-14 w-auto object-contain bg-white/5 backdrop-blur rounded-lg p-2"
+                src="/logo.png"
+                alt="PepperAnni"
+                className="h-16 w-auto object-contain bg-white rounded-full p-1"
               />
               <div className="flex flex-col leading-none">
-                <span className="text-2xl font-heading font-medium text-white tracking-wide">ZELLOR</span>
-                <span className="text-[10px] text-brand-100 tracking-[0.3em] mt-1 font-medium">ZEN LABS</span>
+                <span className="text-3xl font-heading font-medium text-white tracking-wide">PepperAnni</span>
+                <span className="text-[9px] text-brand-100 tracking-[0.2em] mt-1 font-medium">BIOHACKING · GLOW SMARTER · LIVE LONGER</span>
               </div>
             </div>
             <p className="text-charcoal-200 text-sm max-w-xs text-center md:text-left font-light leading-relaxed">
-              Research-grade peptides crafted with botanical precision. Lab-tested, high-purity formulations for the modern wellness journey.
+              Research-grade peptides for biohacking and longevity. Lab-tested, high-purity formulations to help you glow smarter and live longer.
             </p>
           </div>
 
@@ -43,13 +43,13 @@ const Footer: React.FC = () => {
             <h3 className="text-white font-medium text-xs uppercase tracking-[0.3em] mb-3">Contact</h3>
 
             <a
-              href="mailto:hello@zellor.zen"
+              href="mailto:hello@pepperanni.com"
               className="text-charcoal-200 hover:text-brand-100 transition-colors flex items-center gap-2 text-sm"
             >
               <svg className="w-4 h-4 text-brand-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              hello@zellor.zen
+              hello@pepperanni.com
             </a>
 
             <a
@@ -94,14 +94,14 @@ const Footer: React.FC = () => {
         {/* Zen divider */}
         <div className="relative flex items-center justify-center mb-6">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-brand-300/30 to-transparent" />
-          <span className="px-4 text-brand-200/60 text-xs tracking-[0.4em] font-serif italic">zen</span>
+          <span className="px-4 text-brand-200/60 text-xs tracking-[0.4em] font-serif italic">glow</span>
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-brand-300/30 to-transparent" />
         </div>
 
         {/* Footer Bottom */}
         <div className="text-center">
           <p className="text-xs text-charcoal-300 tracking-wide">
-            © {currentYear} Zellor &middot; Zen Labs. All rights reserved.
+            © {currentYear} PepperAnni. All rights reserved.
           </p>
         </div>
       </div>

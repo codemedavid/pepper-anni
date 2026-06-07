@@ -7,46 +7,46 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Zellor Zen Labs - Botanical Biotech Theme
-        'theme-bg': '#FBFAF6',
-        'theme-text': '#0F2A3F',
+        // PepperAnni — Biohacking · Glow Smarter · Live Longer
+        'theme-bg': '#FCF8FA',
+        'theme-text': '#2B1019',
 
-        // Primary Palette - Sage Teal (botanical zen)
+        // Primary Palette — Raspberry / Wine (longevity glow)
         'brand': {
-          DEFAULT: '#4A8478',
-          50: '#F2F7F5',
-          100: '#E0ECE7',
-          200: '#BFD7CE',
-          300: '#94BAAE',
-          400: '#6A9C8D',
-          500: '#4A8478',
-          600: '#3C6C62',
-          700: '#305850',
-          800: '#264640',
-          900: '#1B3531',
+          DEFAULT: '#A8285A',
+          50: '#FCF1F6',
+          100: '#F9E0EC',
+          200: '#F2BDD3',
+          300: '#E68FB2',
+          400: '#D85E8E',
+          500: '#C53A6E',
+          600: '#A8285A',
+          700: '#8A1E49',
+          800: '#6E193B',
+          900: '#54142E',
         },
 
-        // Secondary & Neutral - Deep Navy
+        // Secondary & Neutral — Deep Aubergine / Plum (text & dark surfaces)
         'charcoal': {
-          DEFAULT: '#0F2A3F',
-          50: '#F4F6F8',
-          100: '#E5EAEF',
-          200: '#C3CDD6',
-          300: '#94A4B2',
-          400: '#5F7488',
-          500: '#3C5269',
-          600: '#243C54',
-          700: '#192F44',
-          800: '#14304B',
-          900: '#0F2A3F',
+          DEFAULT: '#2B1019',
+          50: '#F8F4F6',
+          100: '#EFE2E9',
+          200: '#DAC2D0',
+          300: '#BB93AB',
+          400: '#925E7B',
+          500: '#6B3C53',
+          600: '#4E2A3C',
+          700: '#3E2030',
+          800: '#2E1623',
+          900: '#220F1A',
         },
 
         // Backgrounds & Accents
-        'cream': '#FBFAF6',
-        'blush-light': '#E0ECE7',
-        'warm-white': '#FDFCF8',
-        'sage-mist': '#D5E4DD',
-        'navy-deep': '#0F2A3F',
+        'cream': '#FCF8FA',
+        'blush-light': '#F9E0EC',
+        'warm-white': '#FFFCFD',
+        'sage-mist': '#F2BDD3',
+        'navy-deep': '#2B1019',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
@@ -76,6 +76,7 @@ export default {
       animation: {
         'fadeIn': 'fadeIn 0.6s ease-out',
         'slideUp': 'slideUp 0.5s ease-out',
+        'slide-up': 'sheetUp 0.3s ease-out',
         'float': 'float 6s ease-in-out infinite',
         'shimmer': 'shimmer 8s ease-in-out infinite',
       },
@@ -88,6 +89,10 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(20px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        sheetUp: {
+          '0%': { transform: 'translateY(100%)' },
+          '100%': { transform: 'translateY(0)' },
+        },
         float: {
           '0%, 100%': { transform: 'translateY(0px)' },
           '50%': { transform: 'translateY(-10px)' },
@@ -98,9 +103,9 @@ export default {
         },
       },
       backgroundImage: {
-        'zellor-gradient': 'linear-gradient(180deg, #0F2A3F 0%, #1E4A52 50%, #4A8478 100%)',
-        'zellor-gradient-horizontal': 'linear-gradient(90deg, #0F2A3F 0%, #4A8478 100%)',
-        'zen-veil': 'radial-gradient(ellipse at top, rgba(74,132,120,0.08), transparent 60%)',
+        'pepper-gradient': 'linear-gradient(180deg, #54142E 0%, #8A1E49 50%, #C53A6E 100%)',
+        'pepper-gradient-horizontal': 'linear-gradient(90deg, #54142E 0%, #C53A6E 100%)',
+        'glow-veil': 'radial-gradient(ellipse at top, rgba(197,58,110,0.08), transparent 60%)',
       },
     },
   },

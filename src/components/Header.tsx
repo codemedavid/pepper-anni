@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Menu, X, FlaskConical, HelpCircle, Truck, Calculator, Shield, ClipboardList } from 'lucide-react';
+import { ShoppingCart, Menu, X, FlaskConical, HelpCircle, Truck, Calculator, Shield, ClipboardList, Star } from 'lucide-react';
 
 interface HeaderProps {
   cartItemsCount: number;
@@ -21,16 +21,16 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
               className="flex items-center hover:opacity-90 transition-opacity"
             >
               <img
-                src="/logo.jpg"
-                alt="Zellor Zen Labs"
-                className="h-10 sm:h-12 w-auto object-contain rounded-lg"
+                src="/logo.png"
+                alt="PepperAnni"
+                className="h-11 sm:h-14 w-auto object-contain rounded-full"
               />
               <span className="ml-2 sm:ml-3 flex flex-col leading-none">
-                <span className="text-base sm:text-2xl font-heading font-semibold text-zellor-gradient tracking-wide">
-                  ZELLOR
+                <span className="text-lg sm:text-3xl font-heading font-semibold text-pepper-gradient tracking-wide">
+                  PepperAnni
                 </span>
-                <span className="text-[9px] sm:text-[10px] font-sans font-medium text-brand-600 tracking-[0.25em] mt-0.5">
-                  ZEN LABS
+                <span className="text-[8px] sm:text-[9px] font-sans font-medium text-brand-600 tracking-[0.18em] mt-0.5">
+                  BIOHACKING · GLOW SMARTER · LIVE LONGER
                 </span>
               </span>
             </button>
@@ -66,6 +66,13 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
                 >
                   <FlaskConical className="w-4 h-4" />
                   Protocols
+                </a>
+                <a
+                  href="/reviews"
+                  className="text-sm font-medium text-charcoal-600 hover:text-brand-600 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Star className="w-4 h-4" />
+                  Reviews
                 </a>
                 <a
                   href="/track-order"
@@ -138,16 +145,16 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
             <div className="flex items-center justify-between p-5 border-b border-brand-100">
               <div className="flex items-center gap-3">
                 <img
-                  src="/logo.jpg"
-                  alt="Zellor Zen Labs"
-                  className="h-8 w-auto object-contain rounded-md"
+                  src="/logo.png"
+                  alt="PepperAnni"
+                  className="h-9 w-auto object-contain rounded-full"
                 />
                 <span className="flex flex-col leading-none">
-                  <span className="text-lg font-heading font-semibold text-zellor-gradient tracking-wide">
-                    ZELLOR
+                  <span className="text-xl font-heading font-semibold text-pepper-gradient tracking-wide">
+                    PepperAnni
                   </span>
-                  <span className="text-[9px] font-sans font-medium text-brand-600 tracking-[0.25em] mt-0.5">
-                    ZEN LABS
+                  <span className="text-[8px] font-sans font-medium text-brand-600 tracking-[0.15em] mt-0.5">
+                    GLOW SMARTER · LIVE LONGER
                   </span>
                 </span>
               </div>
@@ -203,6 +210,16 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
                     <FlaskConical className="w-[18px] h-[18px]" />
                   </div>
                   Protocols
+                </a>
+
+                <a
+                  href="/reviews"
+                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-800 hover:bg-brand-50 transition-colors"
+                >
+                  <div className="p-2 rounded-lg bg-brand-50 text-brand-600">
+                    <Star className="w-[18px] h-[18px]" />
+                  </div>
+                  Reviews
                 </a>
 
                 <a

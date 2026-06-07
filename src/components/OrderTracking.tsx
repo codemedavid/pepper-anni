@@ -108,7 +108,7 @@ const OrderTracking: React.FC = () => {
                                 type="text"
                                 value={orderId}
                                 onChange={(e) => setOrderId(e.target.value)}
-                                placeholder="Enter Order Number (e.g., TBS-1234)"
+                                placeholder="Enter Order Number (e.g., PPA-1234)"
                                 className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-navy-900 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-lg text-gray-900"
                             />
                         </div>

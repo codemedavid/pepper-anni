@@ -96,7 +96,11 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
 
       {/* Product Details */}
       <div className="p-4 sm:p-5 flex-1 flex flex-col">
-        <h3 className="font-heading font-semibold text-charcoal-900 text-sm sm:text-base mb-1 line-clamp-2 tracking-tight">
+        <h3
+          onClick={() => onProductClick?.(product)}
+          className="font-heading font-semibold text-charcoal-900 text-sm sm:text-base mb-1 line-clamp-2 tracking-tight cursor-pointer relative z-20"
+          title="View details"
+        >
           {product.name}
         </h3>
         <p className="text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3 line-clamp-2 min-h-[1.5rem] sm:min-h-[2.5rem] leading-relaxed">
@@ -149,7 +153,11 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
         {/* Price and Cart Actions */}
         <div className="flex flex-col gap-2 sm:gap-3 mt-auto">
           {hasDiscount ? (
-            <div className="flex items-baseline gap-1 sm:gap-2">
+            <div
+              onClick={() => onProductClick?.(product)}
+              className="flex items-baseline gap-1 sm:gap-2 cursor-pointer relative z-20"
+              title="View details"
+            >
               <span className="text-base sm:text-lg font-semibold text-charcoal-900">
                 ₱{currentPrice.toLocaleString('en-PH', { minimumFractionDigits: 0 })}
               </span>
@@ -158,7 +166,11 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
               </span>
             </div>
           ) : (
-            <div className="flex items-baseline">
+            <div
+              onClick={() => onProductClick?.(product)}
+              className="flex items-baseline cursor-pointer relative z-20 w-fit"
+              title="View details"
+            >
               <span className="text-base sm:text-lg font-semibold text-charcoal-900">
                 ₱{currentPrice.toLocaleString('en-PH', { minimumFractionDigits: 0 })}
               </span>

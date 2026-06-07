@@ -267,7 +267,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
 
             // Generate order number before saving
             const randomDigits = Math.floor(Math.random() * 9000 + 1000); // 1000-9999
-            const customOrderNumber = `TBS-${randomDigits}`;
+            const customOrderNumber = `PPA-${randomDigits}`;
 
             // Save order to database
             const { data: orderData, error: orderError } = await supabase

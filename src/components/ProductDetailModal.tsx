@@ -1,6 +1,55 @@
 import React, { useState } from 'react';
-import { X, Package, Beaker, ShoppingCart, Plus, Minus, Sparkles, ArrowLeft } from 'lucide-react';
+import { X, Package, Beaker, ShoppingCart, Plus, Minus, Sparkles, ArrowLeft, Star, MessageSquareQuote } from 'lucide-react';
 import type { Product, ProductVariation } from '../types';
+import { useReviews } from '../hooks/useReviews';
+
+const ProductReviews: React.FC<{ productId: string }> = ({ productId }) => {
+  const { reviews, loading } = useReviews(productId);
+
+  if (loading || reviews.length === 0) return null;
+
+  return (
+    <div className="mt-4 sm:mt-6 border-t border-gray-100 pt-4 sm:pt-6">
+      <h3 className="font-heading text-sm sm:text-base md:text-lg font-bold text-charcoal-900 mb-3 flex items-center gap-1.5 sm:gap-2">
+        <MessageSquareQuote className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-brand-600" />
+        Customer Reviews
+        <span className="text-xs font-medium text-gray-400">({reviews.length})</span>
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {reviews.map((r) => (
+          <div key={r.id} className="bg-gray-50 rounded p-3 border border-gray-100">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <span className="font-semibold text-charcoal-800 text-sm">{r.reviewer_name}</span>
+              {r.rating != null && (
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      className={`w-3.5 h-3.5 ${n <= r.rating! ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+            {r.review_text && (
+              <p className="text-xs text-gray-600 whitespace-pre-wrap break-words leading-relaxed">
+                {r.review_text}
+              </p>
+            )}
+            {r.image_url && (
+              <img
+                src={r.image_url}
+                alt={`Review by ${r.reviewer_name}`}
+                loading="lazy"
+                className="mt-2 w-full rounded border border-gray-100 object-contain bg-white"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 interface ProductDetailModalProps {
   product: Product;
@@ -47,10 +96,20 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClos
   };
 
   return (
-    <div className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded sm:rounded shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden my-2 sm:my-8 border border-gray-100">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 bg-charcoal-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl max-w-4xl w-full max-h-[92vh] sm:max-h-[90vh] overflow-hidden border border-gray-100 animate-slide-up sm:animate-none flex flex-col"
+      >
+        {/* Drag handle (mobile) */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-10 h-1.5 bg-gray-300 rounded-full" />
+        </div>
         {/* Header */}
-        <div className="bg-white text-charcoal-900 p-3 sm:p-4 md:p-6 relative border-b border-gray-100">
+        <div className="bg-white text-charcoal-900 p-3 sm:p-4 md:p-6 relative border-b border-gray-100 shrink-0">
           <button
             onClick={onClose}
             className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 hover:bg-gray-100 rounded transition-colors text-gray-400 hover:text-gray-600"
@@ -80,7 +139,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClos
           </div>
         </div>
         {/* Content */}
-        <div className="p-3 sm:p-4 md:p-6 overflow-y-auto max-h-[calc(95vh-180px)] sm:max-h-[calc(90vh-280px)]">
+        <div className="p-3 sm:p-4 md:p-6 overflow-y-auto flex-1">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
             {/* Left Column */}
             <div className="space-y-3 sm:space-y-4 md:space-y-6">
@@ -312,6 +371,9 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClos
                 )}
             </div>
           </div>
+
+          {/* Customer Reviews attached to this product */}
+          <ProductReviews productId={product.id} />
         </div>
       </div>
     </div>

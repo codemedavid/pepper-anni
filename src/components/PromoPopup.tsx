@@ -121,7 +121,7 @@ const PromoPopup: React.FC = () => {
                 Don't Miss Out!
               </h3>
               <p className="text-charcoal-500 text-sm mb-6 leading-relaxed">
-                Enter your email to receive exclusive promos, early access to new products, and special deals from Zellor Zen Labs.
+                Enter your email to receive exclusive promos, early access to new products, and special deals from PepperAnni.
               </p>
 
               {/* Form */}
