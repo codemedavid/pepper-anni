@@ -84,6 +84,11 @@ async function tg(token: string, method: string, payload: Record<string, unknown
 const answer = (token: string, id: string, text = "", alert = false) =>
   tg(token, "answerCallbackQuery", { callback_query_id: id, text: String(text).slice(0, 200), show_alert: alert });
 
+// Remove the inline buttons from a message so a stale/orphaned card can't be tapped again.
+async function stripButtons(token: string, chatId: number, messageId: number) {
+  await tg(token, "editMessageReplyMarkup", { chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } });
+}
+
 async function isAdmin(token: string, chatId: number, userId: number): Promise<boolean> {
   const r = await tg(token, "getChatMember", { chat_id: chatId, user_id: userId });
   return r.ok && ["creator", "administrator"].includes(r.result?.status);
@@ -155,10 +160,22 @@ async function handleAction(token: string, cfg: any, cb: any, action: string) {
     return answer(token, cb.id, "Staff/admins only", true);
   }
 
-  const { data: link } = await admin
+  const { data: link, error: linkErr } = await admin
     .from("order_telegram_messages").select("order_id")
     .eq("chat_id", chatId).eq("main_message_id", cb.message.message_id).maybeSingle();
-  if (!link) return answer(token, cb.id, "Couldn't find this order");
+  if (linkErr) {
+    // Transient DB error — don't touch the card (it may be perfectly valid); ask to retry.
+    console.error("order lookup failed:", linkErr.message);
+    return answer(token, cb.id, "Couldn't reach the database — try again", true);
+  }
+  if (!link) {
+    // The query definitively found no row for this card: it's a stale/orphaned duplicate
+    // (e.g. left behind when a topic move failed mid-flight and the card was re-posted).
+    // Acting on it is impossible, and leaving the buttons live makes every tap dead-end.
+    // Strip its buttons so it goes inert, and point staff at the current card.
+    await stripButtons(token, Number(chatId), cb.message.message_id);
+    return answer(token, cb.id, "This card is out of date — use the latest card for this order.", true);
+  }
 
   const { data: order } = await admin.from("orders").select("*").eq("id", link.order_id).maybeSingle();
   if (!order) return answer(token, cb.id, "Order no longer exists", true);

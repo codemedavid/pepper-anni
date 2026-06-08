@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, ArrowLeft, TrendingUp, Package, Users, FolderOpen, CreditCard, Sparkles, Layers, Shield, RefreshCw, Warehouse, ShoppingCart, HelpCircle, MapPin, Tag, Truck, Star } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, ArrowLeft, TrendingUp, Package, Users, FolderOpen, CreditCard, Sparkles, Layers, Shield, RefreshCw, Warehouse, ShoppingCart, HelpCircle, MapPin, Tag, Truck, Star, BarChart3 } from 'lucide-react';
 import type { Product } from '../types';
 import { useMenu } from '../hooks/useMenu';
 import { useCategories } from '../hooks/useCategories';
@@ -19,6 +19,7 @@ import PromoCodeManager from './PromoCodeManager';
 import CourierManager from './CourierManager';
 import ProtocolManager from './ProtocolManager';
 import ReviewsManager from './ReviewsManager';
+import SalesAnalytics from './SalesAnalytics';
 // GuideManager removed (Peptalk functionality disabled)
 
 const AdminDashboard: React.FC = () => {
@@ -29,13 +30,13 @@ const AdminDashboard: React.FC = () => {
   const [loginError, setLoginError] = useState('');
   const { products, loading, addProduct, updateProduct, deleteProduct, refreshProducts } = useMenu();
   const { categories } = useCategories();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'products' | 'add' | 'edit' | 'categories' | 'payments' | 'inventory' | 'orders' | 'shipping' | 'coa' | 'faq' | 'settings' | 'promo-codes' | 'couriers' | 'protocols' | 'reviews'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'products' | 'add' | 'edit' | 'categories' | 'payments' | 'inventory' | 'orders' | 'shipping' | 'coa' | 'faq' | 'settings' | 'promo-codes' | 'couriers' | 'protocols' | 'reviews' | 'analytics'>('dashboard');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [managingVariationsProductId, setManagingVariationsProductId] = useState<string | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const { addProtocol, protocols } = useProtocols();
+  const { addProtocol } = useProtocols();
 
   const variationManagerProduct = managingVariationsProductId
     ? products.find((product) => product.id === managingVariationsProductId) || null
@@ -114,7 +115,7 @@ const AdminDashboard: React.FC = () => {
         if (!result.success) {
           alert(result.error || 'Failed to delete product');
         }
-      } catch (error) {
+      } catch {
         alert('Failed to delete product. Please try again.');
       } finally {
         setIsProcessing(false);
@@ -151,7 +152,7 @@ const AdminDashboard: React.FC = () => {
 
         setSelectedProducts(new Set());
         setManagingVariationsProductId(null);
-      } catch (error) {
+      } catch {
         alert('Failed to delete products. Please try again.');
       } finally {
         setIsProcessing(false);
@@ -243,7 +244,7 @@ const AdminDashboard: React.FC = () => {
         const imageUrlValue = formData.image_url !== undefined ? formData.image_url : null;
 
         // Create update payload - ensure image_url is always included
-        const updatePayload: any = {
+        const updatePayload: Partial<Product> = {
           ...updateData,
         };
 
@@ -323,7 +324,7 @@ const AdminDashboard: React.FC = () => {
         }
       } else {
         // Remove non-creatable fields for new products
-        const { variations, ...createData } = formData as any;
+        const { variations, ...createData } = formData;
 
         // EXPLICITLY ensure image_url is included
         const createPayload = {
@@ -1207,6 +1208,11 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
+  // Sales Analytics View
+  if (currentView === 'analytics') {
+    return <SalesAnalytics onBack={() => setCurrentView('dashboard')} />;
+  }
+
   // Orders View
   if (currentView === 'orders') {
     return (
@@ -1446,6 +1452,18 @@ const AdminDashboard: React.FC = () => {
                 Quick Actions
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  onClick={() => setCurrentView('analytics')}
+                  className="group flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-xl transition-all border border-transparent hover:border-gray-200"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <BarChart3 className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <span className="block text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">Sales Analytics</span>
+                    <span className="text-xs text-gray-500">Revenue & insights</span>
+                  </div>
+                </button>
                 <button
                   onClick={handleAddProduct}
                   className="group flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-xl transition-all border border-transparent hover:border-gray-200"
