@@ -36,11 +36,11 @@ const PromoPopup: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    const trimmed = email.trim();
-    if (!trimmed) return;
+    const normalized = email.trim().toLowerCase();
+    if (!normalized) return;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmed)) {
+    if (!emailRegex.test(normalized)) {
       setError('Please enter a valid email address');
       return;
     }
@@ -48,16 +48,15 @@ const PromoPopup: React.FC = () => {
     setSubmitting(true);
     try {
       const { error: dbError } = await supabase
-        .from('promo_subscribers')
-        .upsert({ email: trimmed, source: 'tbs_promo_popup' }, { onConflict: 'email', ignoreDuplicates: true });
+        .rpc('subscribe_to_promos', { p_email: normalized, p_source: 'tbs_promo_popup' });
 
       if (dbError) {
         setError('Something went wrong. Please try again.');
       } else {
         setSubmitted(true);
         localStorage.setItem(SUBMITTED_KEY, 'true');
-        identifyUser(trimmed, { subscribed: true, subscription_source: 'promo_popup' });
-        posthog.capture('tbs_promo_popup_subscribed', { email: trimmed });
+        identifyUser(normalized, { subscribed: true, subscription_source: 'promo_popup' });
+        posthog.capture('tbs_promo_popup_subscribed', { email: normalized });
       }
     } catch {
       setError('Something went wrong. Please try again.');
