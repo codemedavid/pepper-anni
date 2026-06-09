@@ -1020,14 +1020,27 @@ Please confirm this order. Thank you!
                                     const courier = couriers.find(c => c.id === selectedCourierId);
                                     if (!courier) return false;
 
-                                    // Match logic:
-                                    // 1. If location ID explicitly contains courier code (e.g. LBC_METRO contains LBC)
-                                    // 2. Or check against common patterns if codes don't strictly match
+                                    // Match a location to a courier by looking for any of the
+                                    // courier's identifiers inside the location's id or name.
+                                    // Couriers often have a short code that differs from how
+                                    // they're written in location names (e.g. code "jnt" but
+                                    // locations named "J&T - ..."), so we also check the
+                                    // courier's display name and a few known brand aliases.
                                     const code = courier.code.toLowerCase();
-                                    const locId = loc.id.toLowerCase();
-                                    const locName = loc.name.toLowerCase();
+                                    const aliasMap: Record<string, string[]> = {
+                                        jnt: ['jnt', 'j&t', 'jandt', 'jt'],
+                                        lbc: ['lbc'],
+                                        lalamove: ['lalamove', 'lala'],
+                                        maxim: ['maxim'],
+                                    };
+                                    const aliases = [
+                                        code,
+                                        courier.name.toLowerCase(),
+                                        ...(aliasMap[code] || []),
+                                    ].filter(Boolean);
 
-                                    return locId.includes(code) || locName.includes(code);
+                                    const haystack = `${loc.id} ${loc.name}`.toLowerCase();
+                                    return aliases.some(alias => haystack.includes(alias));
                                 })
                                 .map((loc) => (
                                     <button
