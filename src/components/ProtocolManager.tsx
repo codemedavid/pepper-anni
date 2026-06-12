@@ -35,6 +35,7 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
     const [filePreview, setFilePreview] = useState<string | null>(null);
 
     const handleEdit = (protocol: Protocol) => {
+        if (fileInputRef.current) fileInputRef.current.value = '';
         setEditingId(protocol.id);
         setFormData({
             name: protocol.name,
@@ -53,18 +54,22 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
         setFilePreview(protocol.file_url || null);
         setSelectedFile(null);
         setIsAdding(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleAdd = () => {
+        if (fileInputRef.current) fileInputRef.current.value = '';
         setIsAdding(true);
         setEditingId(null);
         setFormData({ ...emptyForm, sort_order: protocols.length + 1 });
         setNotesText('');
         setSelectedFile(null);
         setFilePreview(null);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleCancel = () => {
+        if (fileInputRef.current) fileInputRef.current.value = '';
         setEditingId(null);
         setIsAdding(false);
         setFormData(emptyForm);
@@ -75,6 +80,8 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+        // Reset the input so selecting the same file again still fires onChange
+        e.target.value = '';
         if (!file) return;
 
         setSelectedFile(file);
