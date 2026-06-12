@@ -41,6 +41,37 @@ export default {
           900: '#220F1A',
         },
 
+        // Dark surfaces / primary text — aliased to the deep aubergine palette
+        // so the many `navy-*` utility classes across the app render correctly.
+        'navy': {
+          DEFAULT: '#220F1A',
+          50: '#F8F4F6',
+          100: '#EFE2E9',
+          200: '#DAC2D0',
+          300: '#BB93AB',
+          400: '#925E7B',
+          500: '#6B3C53',
+          600: '#4E2A3C',
+          700: '#3E2030',
+          800: '#2E1623',
+          900: '#220F1A',
+        },
+
+        // Gold accent — used for icons and highlights throughout the app.
+        'gold': {
+          DEFAULT: '#C9A227',
+          50: '#FCF8EC',
+          100: '#F7EFCF',
+          200: '#EFDD9F',
+          300: '#E6C96B',
+          400: '#DDB746',
+          500: '#C9A227',
+          600: '#A8851E',
+          700: '#856719',
+          800: '#6B5318',
+          900: '#5A4517',
+        },
+
         // Backgrounds & Accents
         'cream': '#FCF8FA',
         'blush-light': '#F9E0EC',
