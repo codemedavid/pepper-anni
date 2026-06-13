@@ -395,7 +395,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, clea
             });
 
             const orderDetails = `
-✨ THE BABE STUDIO - NEW ORDER
+✨ PEPPERANNI - NEW ORDER
 
 📅 ORDER DATE & TIME
 ${dateTimeStamp}
