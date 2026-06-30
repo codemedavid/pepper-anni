@@ -56,20 +56,6 @@ const Hero: React.FC<HeroProps> = ({ onShopAll }) => {
 
         {/* ---- CENTERED CONTENT ---- */}
         <div className="relative z-[2] flex flex-col items-center px-7 py-16 text-center sm:px-12 sm:py-20">
-          {/* hanko stamp */}
-          <div
-            aria-hidden="true"
-            className="mb-7 grid h-[70px] w-[70px] place-items-center rounded-full font-jp text-3xl font-extrabold text-white sm:h-[82px] sm:w-[82px] sm:text-4xl"
-            style={{
-              background: '#d6394f',
-              transform: 'rotate(-7deg)',
-              boxShadow:
-                '0 12px 28px -10px rgba(0,0,0,.7), 0 0 0 2px rgba(232,196,122,.6), inset 0 0 0 2px rgba(255,255,255,.25)',
-            }}
-          >
-            <span className="relative -top-px">桜</span>
-          </div>
-
           {/* kicker */}
           <span className="inline-flex items-center gap-2 rounded-full border border-pink-300/40 bg-brand-300/15 px-4 py-2 text-[12.5px] font-bold uppercase tracking-[0.14em] text-blush-light backdrop-blur-sm">
             <span className="h-2 w-2 rounded-full bg-brand-300 shadow-[0_0_12px_2px_var(--pink)]" />
