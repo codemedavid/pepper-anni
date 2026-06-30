@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Leaf, Shield, FlaskConical, Award } from 'lucide-react';
+import { ArrowRight, ChevronRight, Shield, FlaskConical, Award, Activity } from 'lucide-react';
 
 interface HeroProps {
   onShopAll: () => void;
 }
 
 const trustItems = [
-  { icon: Shield, label: '99% Purity Guaranteed' },
-  { icon: FlaskConical, label: 'Lab Tested' },
-  { icon: Award, label: 'Premium Grade' },
-  { icon: Leaf, label: 'Longevity-Focused' },
+  { icon: Shield, label: 'Lab Verified' },
+  { icon: Award, label: 'Research Grade' },
+  { icon: FlaskConical, label: 'Expert Verified' },
+  { icon: Activity, label: 'Cold-Chain Shipped' },
 ];
 
 const Hero: React.FC<HeroProps> = ({ onShopAll }) => {
@@ -20,83 +20,109 @@ const Hero: React.FC<HeroProps> = ({ onShopAll }) => {
   }, []);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-cream flex items-center justify-center pt-24 pb-16">
-
-      {/* Brand washes */}
-      <div className="absolute inset-0 bg-gradient-to-b from-warm-white via-cream to-blush-light/25" />
+    <section className="px-4 sm:px-7 pt-6">
+      {/* ============ HERO CARD ============ */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className={`relative overflow-hidden rounded-[32px] border border-gold-300/40 shadow-frost transition-all duration-[1100ms] ease-out
+          ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
         style={{
           background:
-            'radial-gradient(50% 45% at 50% 30%, rgba(197,58,110,0.12) 0%, transparent 70%)',
+            'radial-gradient(120% 140% at 88% 8%, rgba(255,111,165,.40), transparent 55%),' +
+            'radial-gradient(90% 120% at 4% 96%, rgba(214,69,126,.30), transparent 52%),' +
+            'linear-gradient(135deg, var(--glacier), var(--glacier-2))',
         }}
-      />
+      >
+        {/* sparkle glints */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(2px 2px at 18% 30%,rgba(255,255,255,.9),transparent),' +
+              'radial-gradient(2px 2px at 64% 18%,rgba(255,205,228,.85),transparent),' +
+              'radial-gradient(1.5px 1.5px at 40% 70%,rgba(255,255,255,.8),transparent),' +
+              'radial-gradient(2px 2px at 84% 60%,rgba(255,185,215,.85),transparent),' +
+              'radial-gradient(1.5px 1.5px at 30% 88%,rgba(255,255,255,.7),transparent)',
+          }}
+        />
 
-      {/* Soft concentric brand rings behind the wordmark */}
-      <div className="absolute left-1/2 top-[34%] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-        <div className="w-[640px] h-[640px] rounded-full border border-brand-200/40" />
-        <div className="absolute inset-16 rounded-full border border-brand-200/30" />
-        <div className="absolute inset-32 rounded-full border border-brand-100/40" />
+        {/* giant kanji watermark */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute right-6 -bottom-14 select-none font-jp font-extrabold leading-none text-white/5"
+          style={{ fontSize: 'clamp(180px, 22vw, 300px)' }}
+        >
+          雪
+        </span>
+
+        {/* ---- CENTERED CONTENT ---- */}
+        <div className="relative z-[2] flex flex-col items-center px-7 py-16 text-center sm:px-12 sm:py-20">
+          {/* hanko stamp */}
+          <div
+            aria-hidden="true"
+            className="mb-7 grid h-[70px] w-[70px] place-items-center rounded-full font-jp text-3xl font-extrabold text-white sm:h-[82px] sm:w-[82px] sm:text-4xl"
+            style={{
+              background: '#d6394f',
+              transform: 'rotate(-7deg)',
+              boxShadow:
+                '0 12px 28px -10px rgba(0,0,0,.7), 0 0 0 2px rgba(232,196,122,.6), inset 0 0 0 2px rgba(255,255,255,.25)',
+            }}
+          >
+            <span className="relative -top-px">桜</span>
+          </div>
+
+          {/* kicker */}
+          <span className="inline-flex items-center gap-2 rounded-full border border-pink-300/40 bg-brand-300/15 px-4 py-2 text-[12.5px] font-bold uppercase tracking-[0.14em] text-blush-light backdrop-blur-sm">
+            <span className="h-2 w-2 rounded-full bg-brand-300 shadow-[0_0_12px_2px_var(--pink)]" />
+            Now Open · Research Grade
+          </span>
+
+          {/* headline */}
+          <h1 className="mt-5 font-jp font-extrabold leading-[1.06] tracking-tight text-white" style={{ fontSize: 'clamp(40px,4.6vw,68px)' }}>
+            A cooler kind<br />of <span className="text-pepper-gradient">glow.</span>
+          </h1>
+
+          {/* subtitle */}
+          <p className="mt-5 max-w-[44ch] text-base leading-relaxed text-blush-light/85 sm:text-lg">
+            Lab-verified research peptides, frozen at purity and shipped cold. Built for
+            biohackers and longevity seekers who don&rsquo;t compromise.
+          </p>
+
+          {/* CTAs */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
+            <button
+              onClick={onShopAll}
+              className="group inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 font-display text-base font-bold text-[#2a1604] transition-all duration-200 hover:-translate-y-0.5"
+              style={{
+                background: 'linear-gradient(180deg,#f6dd9a,#c79b3f)',
+                boxShadow: '0 16px 36px -14px rgba(247,116,168,.7),0 0 0 1px rgba(255,255,255,.6) inset',
+              }}
+            >
+              Explore Peptides
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" strokeWidth={2.2} />
+            </button>
+            <a
+              href="/protocols"
+              className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/5 px-5 py-3.5 text-[15.5px] font-semibold text-blush-light transition-all duration-200 hover:bg-white/15"
+            >
+              <ChevronRight className="h-4 w-4" strokeWidth={2} />
+              View Protocols
+            </a>
+          </div>
+        </div>
       </div>
 
-      {/* Gallery hairline frame */}
-      <div className="absolute inset-4 sm:inset-6 lg:inset-8 border border-brand-100/70 rounded-[28px] pointer-events-none" />
-
-      {/* Content */}
-      <div
-        className={`
-          relative z-10 w-full max-w-3xl mx-auto px-6 text-center flex flex-col items-center
-          transition-all duration-[1100ms] ease-out transform
-          ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}
-        `}
-      >
-        {/* Eyebrow */}
-        <div className="inline-flex items-center gap-4 mb-10">
-          <span className="h-px w-10 bg-brand-300" />
-          <span className="text-[11px] tracking-[0.5em] uppercase text-brand-600 font-medium">
-            Biohacking · Est. 2024
-          </span>
-          <span className="h-px w-10 bg-brand-300" />
-        </div>
-
-        {/* Wordmark */}
-        <h1 className="font-heading font-medium leading-[0.95] tracking-tight text-6xl md:text-7xl lg:text-[6rem] mb-7">
-          <span className="text-pepper-gradient">PepperAnni</span>
-        </h1>
-
-        {/* Tagline */}
-        <p className="text-xs md:text-sm font-sans font-medium text-charcoal-500 mb-10 tracking-[0.5em] uppercase">
-          Glow Smarter &middot; Live Longer
-        </p>
-
-        {/* Paragraph */}
-        <p className="text-lg md:text-xl text-charcoal-600 leading-relaxed font-light max-w-2xl mb-12">
-          Research-grade peptides engineered for biohackers and longevity seekers. Each formulation is lab-tested for purity — so you can glow smarter and live longer.
-        </p>
-
-        {/* CTA */}
-        <button
-          onClick={onShopAll}
-          className="btn-primary inline-flex items-center justify-center gap-2 group"
-        >
-          Explore Peptides
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-        </button>
-
-        {/* Trust row */}
-        <div className="mt-16 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 max-w-2xl">
+      {/* ============ TRUST BAR ============ */}
+      <div className="mt-5">
+        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 rounded-2xl border border-gold-300/40 bg-frost px-5 py-4 shadow-soft backdrop-blur-md">
           {trustItems.map((item, idx) => (
-            <React.Fragment key={idx}>
-              {idx > 0 && <span className="hidden sm:block w-1 h-1 rounded-full bg-brand-300" />}
-              <div className="flex items-center gap-2 text-charcoal-700">
-                <item.icon className="w-4 h-4 text-brand-500" strokeWidth={1.4} />
-                <span className="text-[13px] font-medium tracking-wide">{item.label}</span>
-              </div>
-            </React.Fragment>
+            <div key={idx} className="flex items-center gap-2.5 text-sm font-semibold text-charcoal-200">
+              <item.icon className="h-[22px] w-[22px] text-brand-700" strokeWidth={1.8} />
+              {item.label}
+            </div>
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

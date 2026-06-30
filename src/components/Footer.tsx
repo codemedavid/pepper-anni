@@ -1,5 +1,5 @@
 import React from 'react';
-import { HelpCircle, MapPin, Truck, FlaskConical, Shield } from 'lucide-react';
+import { HelpCircle, Truck, FlaskConical, Shield } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -43,13 +43,13 @@ const Footer: React.FC = () => {
             <h3 className="text-white font-medium text-xs uppercase tracking-[0.3em] mb-3">Contact</h3>
 
             <a
-              href="mailto:hello@pepperanni.com"
+              href="mailto:Pepperanni2026@gmail.com"
               className="text-charcoal-200 hover:text-brand-100 transition-colors flex items-center gap-2 text-sm"
             >
               <svg className="w-4 h-4 text-brand-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              hello@pepperanni.com
+              Pepperanni2026@gmail.com
             </a>
 
             <a
@@ -61,11 +61,6 @@ const Footer: React.FC = () => {
               </svg>
               0947 506 7148
             </a>
-
-            <div className="text-charcoal-200 flex items-center gap-2 text-sm mt-2">
-              <MapPin className="w-4 h-4 text-brand-200" strokeWidth={1.5} />
-              General Trias, Cavite
-            </div>
           </div>
 
           {/* Quick Links */}

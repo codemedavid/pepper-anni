@@ -48,7 +48,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
     value.toLocaleString('en-PH', { minimumFractionDigits: 0 });
 
   return (
-    <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-brand-100 bg-warm-white transition-all duration-300 hover:border-brand-200 hover:shadow-soft">
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gold-300/30 bg-charcoal-800/60 backdrop-blur-md transition-all duration-300 hover:border-gold-300/60 hover:shadow-luxury hover:-translate-y-1.5">
       {/* Click overlay for product details */}
       <div
         onClick={() => onProductClick?.(product)}
@@ -57,7 +57,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
       />
 
       {/* Product Image */}
-      <div className="relative h-32 overflow-hidden bg-brand-50 sm:h-48">
+      <div className="relative h-32 overflow-hidden bg-gradient-to-b from-charcoal-700 to-charcoal-900 sm:h-48">
         {product.image_url && !imageError ? (
           <img
             src={product.image_url}
@@ -80,8 +80,8 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
 
         {/* Stock Status Overlay */}
         {isUnavailable && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-warm-white/75 backdrop-blur-[2px]">
-            <span className="rounded-full border border-charcoal-200 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-charcoal-500">
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-charcoal-900/75 backdrop-blur-[2px]">
+            <span className="rounded-full border border-gold-300/30 bg-charcoal-800 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-charcoal-200">
               {!product.available ? 'Unavailable' : 'Out of Stock'}
             </span>
           </div>
@@ -92,7 +92,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
       <div className="flex flex-1 flex-col p-3.5 sm:p-5">
         <h3
           onClick={() => onProductClick?.(product)}
-          className="relative z-20 mb-2 line-clamp-2 cursor-pointer font-heading text-base font-semibold leading-tight tracking-tight text-charcoal-900 transition-colors group-hover:text-brand-700 sm:text-xl"
+          className="relative z-20 mb-2 line-clamp-2 cursor-pointer font-heading text-base font-semibold leading-tight tracking-tight text-charcoal-50 transition-colors group-hover:text-brand-300 sm:text-xl"
           title="View details"
         >
           {product.name}
@@ -114,10 +114,10 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
                   disabled={isOutOfStock}
                   className={`relative z-20 rounded-full border px-2.5 py-1 text-[10px] font-medium transition-all duration-200 sm:text-xs ${
                     isSelected
-                      ? 'border-brand-500 bg-brand-50 text-brand-700'
+                      ? 'border-transparent bg-brand-500 text-white'
                       : isOutOfStock
-                        ? 'cursor-not-allowed border-charcoal-100 bg-charcoal-50 text-charcoal-300 line-through'
-                        : 'border-charcoal-200 bg-white text-charcoal-600 hover:border-brand-300'
+                        ? 'cursor-not-allowed border-charcoal-600 bg-charcoal-700 text-charcoal-400 line-through'
+                        : 'border-gold-300/30 bg-white/5 text-charcoal-200 hover:border-brand-300'
                   }`}
                 >
                   {variation.name}
@@ -140,7 +140,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           className="relative z-20 mb-3 flex w-fit cursor-pointer items-baseline gap-2"
           title="View details"
         >
-          <span className="font-heading text-xl font-semibold tracking-tight text-charcoal-900 sm:text-2xl">
+          <span className="font-heading text-xl font-semibold tracking-tight text-charcoal-50 sm:text-2xl">
             ₱{formatPrice(currentPrice)}
           </span>
           {hasDiscount && (
@@ -164,8 +164,8 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           disabled={isUnavailable}
           className={`relative z-20 flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold tracking-wide transition-all duration-300 sm:text-sm ${
             isUnavailable
-              ? 'cursor-not-allowed bg-charcoal-50 text-charcoal-300'
-              : 'bg-charcoal-900 text-cream hover:bg-brand-600 active:scale-[0.98]'
+              ? 'cursor-not-allowed bg-white/5 text-charcoal-400'
+              : 'bg-brand-500 text-white hover:bg-brand-600 active:scale-[0.98]'
           }`}
         >
           <Plus className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" strokeWidth={2.5} />

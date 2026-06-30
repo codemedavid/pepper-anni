@@ -12,8 +12,11 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
 
   return (
     <>
-      <header className="bg-white/95 backdrop-blur-sm sticky top-0 z-50 border-b border-brand-100">
-        <div className="container mx-auto px-4 md:px-6 py-3">
+      <header className="sticky top-0 z-50 pt-3.5">
+        <div
+          className="mx-4 sm:mx-7 rounded-[26px] border border-gold-300/40 px-4 md:px-5 py-3 shadow-frost backdrop-blur-xl saturate-150"
+          style={{ background: 'linear-gradient(180deg, var(--frost-strong), var(--frost))' }}
+        >
           <div className="flex items-center justify-between gap-4">
             {/* Logo - Rectangular */}
             <button
@@ -41,49 +44,49 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
               <nav className="hidden md:flex items-center gap-1 lg:gap-2">
                 <button
                   onClick={onMenuClick}
-                  className="text-sm font-medium text-charcoal-700 hover:text-brand-600 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                  className="text-sm font-medium text-charcoal-100 hover:text-gold-300 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <FlaskConical className="w-4 h-4" />
                   Products
                 </button>
                 <a
                   href="/calculator"
-                  className="text-sm font-medium text-charcoal-600 hover:text-brand-600 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                  className="text-sm font-medium text-charcoal-200 hover:text-gold-300 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <Calculator className="w-4 h-4" />
                   Calculator
                 </a>
                 <a
                   href="/protocols"
-                  className="text-sm font-medium text-charcoal-600 hover:text-brand-600 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                  className="text-sm font-medium text-charcoal-200 hover:text-gold-300 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <FlaskConical className="w-4 h-4" />
                   Protocols
                 </a>
                 <a
                   href="/reviews"
-                  className="text-sm font-medium text-charcoal-600 hover:text-brand-600 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                  className="text-sm font-medium text-charcoal-200 hover:text-gold-300 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <Star className="w-4 h-4" />
                   Reviews
                 </a>
                 <a
                   href="/track-order"
-                  className="text-sm font-medium text-charcoal-600 hover:text-brand-600 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                  className="text-sm font-medium text-charcoal-200 hover:text-gold-300 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <Truck className="w-4 h-4" />
                   Track
                 </a>
                 <a
                   href="/faq"
-                  className="text-sm font-medium text-charcoal-600 hover:text-brand-600 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                  className="text-sm font-medium text-charcoal-200 hover:text-gold-300 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <HelpCircle className="w-4 h-4" />
                   FAQ
                 </a>
                 <a
                   href="/coa"
-                  className="text-sm font-medium text-charcoal-600 hover:text-brand-600 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                  className="text-sm font-medium text-charcoal-200 hover:text-gold-300 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <Shield className="w-4 h-4" />
                   Lab Reports
@@ -93,7 +96,7 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
               {/* Cart Button */}
               <button
                 onClick={onCartClick}
-                className="relative p-2.5 text-charcoal-700 hover:bg-brand-50 rounded-xl transition-colors"
+                className="relative p-2.5 text-charcoal-100 hover:bg-white/5 rounded-xl transition-colors"
               >
                 <ShoppingCart className="w-5 h-5" />
                 {cartItemsCount > 0 && (
@@ -106,7 +109,7 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2.5 text-charcoal-700 hover:bg-brand-50 rounded-xl transition-colors"
+                className="md:hidden p-2.5 text-charcoal-100 hover:bg-white/5 rounded-xl transition-colors"
                 aria-label="Toggle menu"
               >
                 {mobileMenuOpen ? (
@@ -131,11 +134,11 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
 
           {/* Sidebar Drawer */}
           <div
-            className="absolute top-0 right-0 bottom-0 w-[300px] bg-white shadow-2xl border-l border-brand-100 flex flex-col"
+            className="absolute top-0 right-0 bottom-0 w-[300px] bg-charcoal-800/95 backdrop-blur-md shadow-2xl border-l border-gold-300/30 flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drawer Header */}
-            <div className="flex items-center justify-between p-5 border-b border-brand-100">
+            <div className="flex items-center justify-between p-5 border-b border-gold-300/20">
               <div className="flex items-center gap-3">
                 <img
                   src="/logo.png"
@@ -153,7 +156,7 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
               </div>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 text-charcoal-500 hover:text-rose-500 transition-colors rounded-lg hover:bg-brand-50"
+                className="p-2 text-charcoal-300 hover:text-brand-300 transition-colors rounded-lg hover:bg-white/5"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -167,9 +170,9 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
                     onMenuClick();
                     setMobileMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-800 hover:bg-brand-50 transition-colors"
+                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-100 hover:bg-white/5 transition-colors"
                 >
-                  <div className="p-2 rounded-lg bg-brand-50 text-brand-600">
+                  <div className="p-2 rounded-lg bg-brand-500/15 text-brand-200">
                     <FlaskConical className="w-[18px] h-[18px]" />
                   </div>
                   Products
@@ -177,9 +180,9 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
 
                 <a
                   href="/calculator"
-                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-800 hover:bg-brand-50 transition-colors"
+                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-100 hover:bg-white/5 transition-colors"
                 >
-                  <div className="p-2 rounded-lg bg-brand-50 text-brand-600">
+                  <div className="p-2 rounded-lg bg-brand-500/15 text-brand-200">
                     <Calculator className="w-[18px] h-[18px]" />
                   </div>
                   Calculator
@@ -187,9 +190,9 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
 
                 <a
                   href="/protocols"
-                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-800 hover:bg-brand-50 transition-colors"
+                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-100 hover:bg-white/5 transition-colors"
                 >
-                  <div className="p-2 rounded-lg bg-brand-50 text-brand-600">
+                  <div className="p-2 rounded-lg bg-brand-500/15 text-brand-200">
                     <FlaskConical className="w-[18px] h-[18px]" />
                   </div>
                   Protocols
@@ -197,9 +200,9 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
 
                 <a
                   href="/reviews"
-                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-800 hover:bg-brand-50 transition-colors"
+                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-100 hover:bg-white/5 transition-colors"
                 >
-                  <div className="p-2 rounded-lg bg-brand-50 text-brand-600">
+                  <div className="p-2 rounded-lg bg-brand-500/15 text-brand-200">
                     <Star className="w-[18px] h-[18px]" />
                   </div>
                   Reviews
@@ -207,9 +210,9 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
 
                 <a
                   href="/track-order"
-                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-800 hover:bg-brand-50 transition-colors"
+                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-100 hover:bg-white/5 transition-colors"
                 >
-                  <div className="p-2 rounded-lg bg-brand-50 text-brand-600">
+                  <div className="p-2 rounded-lg bg-brand-500/15 text-brand-200">
                     <Truck className="w-[18px] h-[18px]" />
                   </div>
                   Track Order
@@ -217,9 +220,9 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
 
                 <a
                   href="/faq"
-                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-800 hover:bg-brand-50 transition-colors"
+                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-100 hover:bg-white/5 transition-colors"
                 >
-                  <div className="p-2 rounded-lg bg-brand-50 text-brand-600">
+                  <div className="p-2 rounded-lg bg-brand-500/15 text-brand-200">
                     <HelpCircle className="w-[18px] h-[18px]" />
                   </div>
                   FAQ
@@ -227,9 +230,9 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
 
                 <a
                   href="/coa"
-                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-800 hover:bg-brand-50 transition-colors"
+                  className="flex items-center gap-3 p-4 rounded-xl text-left font-medium text-charcoal-100 hover:bg-white/5 transition-colors"
                 >
-                  <div className="p-2 rounded-lg bg-brand-50 text-brand-600">
+                  <div className="p-2 rounded-lg bg-brand-500/15 text-brand-200">
                     <Shield className="w-[18px] h-[18px]" />
                   </div>
                   Lab Reports

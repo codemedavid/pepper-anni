@@ -12,6 +12,7 @@ import Checkout from './components/Checkout';
 import FloatingCartButton from './components/FloatingCartButton';
 import Footer from './components/Footer';
 import LoadingSpinner from './components/LoadingSpinner';
+import SnowCanvas from './components/SnowCanvas';
 
 // Lazy load route components
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
@@ -47,7 +48,7 @@ function MainApp() {
         : menuItems.filter(item => item.category === selectedCategory);
 
     return (
-        <div className="min-h-screen bg-white font-inter flex flex-col">
+        <div className="min-h-screen bg-transparent font-sans flex flex-col">
             <Header
                 cartItemsCount={cart.getTotalItems()}
                 onCartClick={() => handleViewChange('cart')}
@@ -127,6 +128,7 @@ function App() {
 
     return (
         <Router>
+            <SnowCanvas />
             <PostHogPageviewTracker />
             <Suspense fallback={<LoadingSpinner />}>
                 <Routes>
