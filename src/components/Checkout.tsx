@@ -16,6 +16,14 @@ interface CheckoutProps {
     clearCart: () => void;
 }
 
+// Checkout renders on white cards, but the global `.input-field` class is
+// styled for the app's dark surfaces (light cream text on a translucent
+// background), which is invisible here. Use a light-surface field style with
+// dark text and a clearly visible placeholder so customers can read what they
+// type.
+const CHECKOUT_INPUT_CLASS =
+    'w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-charcoal-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all';
+
 const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, clearCart }) => {
     const { paymentMethods } = usePaymentMethods();
     const { locations: shippingLocations } = useShippingLocations();
@@ -736,7 +744,7 @@ Please confirm this order. Thank you!
                                 <textarea
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all text-sm h-24"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded text-charcoal-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all text-sm h-24"
                                     placeholder="Special instructions for delivery..."
                                 />
                             </div>
@@ -839,7 +847,7 @@ Please confirm this order. Thank you!
                                         type="text"
                                         value={fullName}
                                         onChange={(e) => setFullName(e.target.value)}
-                                        className="input-field"
+                                        className={CHECKOUT_INPUT_CLASS}
                                         placeholder="Juan Dela Cruz"
                                         required
                                     />
@@ -852,7 +860,7 @@ Please confirm this order. Thank you!
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="input-field"
+                                        className={CHECKOUT_INPUT_CLASS}
                                         placeholder="juan@example.com"
                                         required
                                     />
@@ -865,7 +873,7 @@ Please confirm this order. Thank you!
                                         type="tel"
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
-                                        className="input-field"
+                                        className={CHECKOUT_INPUT_CLASS}
                                         placeholder="09XX XXX XXXX"
                                         required
                                     />
@@ -890,7 +898,7 @@ Please confirm this order. Thank you!
                                         type="text"
                                         value={address}
                                         onChange={(e) => setAddress(e.target.value)}
-                                        className="input-field"
+                                        className={CHECKOUT_INPUT_CLASS}
                                         placeholder="House/Unit, Street Name"
                                         required
                                     />
@@ -903,7 +911,7 @@ Please confirm this order. Thank you!
                                         type="text"
                                         value={barangay}
                                         onChange={(e) => setBarangay(e.target.value)}
-                                        className="input-field"
+                                        className={CHECKOUT_INPUT_CLASS}
                                         placeholder="Brgy. Name"
                                         required
                                     />
@@ -917,7 +925,7 @@ Please confirm this order. Thank you!
                                             type="text"
                                             value={city}
                                             onChange={(e) => setCity(e.target.value)}
-                                            className="input-field"
+                                            className={CHECKOUT_INPUT_CLASS}
                                             placeholder="City"
                                             required
                                         />
@@ -930,7 +938,7 @@ Please confirm this order. Thank you!
                                             type="text"
                                             value={state}
                                             onChange={(e) => setState(e.target.value)}
-                                            className="input-field"
+                                            className={CHECKOUT_INPUT_CLASS}
                                             placeholder="Province"
                                             required
                                         />
@@ -944,7 +952,7 @@ Please confirm this order. Thank you!
                                         type="text"
                                         value={zipCode}
                                         onChange={(e) => setZipCode(e.target.value)}
-                                        className="input-field"
+                                        className={CHECKOUT_INPUT_CLASS}
                                         placeholder="ZIP Code"
                                         required
                                     />
@@ -1120,7 +1128,7 @@ Please confirm this order. Thank you!
                                     value={promoCode}
                                     onChange={(e) => setPromoCode(e.target.value)}
                                     placeholder="ENTER CODE"
-                                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none uppercase"
+                                    className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded text-sm text-charcoal-900 placeholder-gray-500 focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none uppercase disabled:bg-gray-100 disabled:text-gray-500"
                                     disabled={!!appliedPromo || isApplyingPromo}
                                 />
                                 {appliedPromo ? (

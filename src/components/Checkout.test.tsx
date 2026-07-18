@@ -169,6 +169,23 @@ describe('Checkout', () => {
       await userEvent.click(screen.getByText('Back to Cart'));
       expect(defaultProps.onBack).toHaveBeenCalled();
     });
+
+    it('renders form inputs with readable dark text on the light checkout cards', () => {
+      render(<Checkout {...defaultProps} />);
+
+      // Regression guard: the global `.input-field` style uses light theme
+      // text (text-charcoal-50) that is invisible on the white checkout cards.
+      // Checkout inputs must use dark text so customers can read what they type.
+      const nameInput = screen.getByPlaceholderText('Juan Dela Cruz');
+      expect(nameInput).toHaveClass('text-charcoal-900');
+      expect(nameInput).not.toHaveClass('text-charcoal-50');
+      expect(nameInput).not.toHaveClass('input-field');
+
+      // The promo code field must also carry dark text (it previously inherited
+      // the light body text color).
+      const promoInput = screen.getByPlaceholderText('ENTER CODE');
+      expect(promoInput).toHaveClass('text-charcoal-900');
+    });
   });
 
   // --- Form Validation ---
