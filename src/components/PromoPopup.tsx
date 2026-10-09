@@ -3,7 +3,9 @@ import { X, Sparkles, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import posthog, { identifyUser } from '../lib/posthog';
 
-const SHOWN_KEY = 'tbs_promo_popup_shown';
+export const PROMO_POPUP_SHOWN_KEY = 'tbs_promo_popup_shown';
+export const PROMO_POPUP_CLOSED_EVENT = 'promo-popup-closed';
+const SHOWN_KEY = PROMO_POPUP_SHOWN_KEY;
 const SUBMITTED_KEY = 'tbs_promo_popup_submitted';
 const POPUP_DELAY_MS = 2000;
 
@@ -30,6 +32,7 @@ const PromoPopup: React.FC = () => {
   const handleClose = () => {
     setVisible(false);
     posthog.capture('tbs_promo_popup_dismissed');
+    window.dispatchEvent(new Event(PROMO_POPUP_CLOSED_EVENT));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

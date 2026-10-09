@@ -5,6 +5,7 @@ import { useCart } from './hooks/useCart';
 import Header from './components/Header';
 import PromoBanner from './components/PromoBanner';
 import PromoPopup from './components/PromoPopup';
+import TikTokPopup from './components/TikTokPopup';
 import SubNav from './components/SubNav';
 import Menu from './components/Menu';
 import Cart from './components/Cart';
@@ -57,6 +58,7 @@ function MainApp() {
 
             <PromoBanner />
             <PromoPopup />
+            <TikTokPopup />
 
             {currentView === 'menu' && (
                 <SubNav selectedCategory={selectedCategory} onCategoryClick={handleCategoryClick} />
