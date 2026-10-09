@@ -165,7 +165,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClos
                   <Beaker className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-brand-600" />
                   Product Description
                 </h3>
-                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed font-sans">{product.description}</p>
+                <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed font-sans whitespace-pre-line break-words">{product.description}</p>
               </div>
 
               {/* Complete Set Inclusions */}

@@ -563,9 +563,9 @@ const AdminDashboard: React.FC = () => {
                     <textarea
                       value={formData.description || ''}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-transparent transition-all bg-white text-black placeholder-gray-400"
-                      placeholder="Detailed product description..."
-                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-transparent transition-all bg-white text-black placeholder-gray-400 resize-y"
+                      placeholder="Detailed product description... (press Enter for new lines, leave a blank line between paragraphs)"
+                      rows={10}
                     />
                   </div>
 
