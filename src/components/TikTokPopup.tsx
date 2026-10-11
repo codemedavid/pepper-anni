@@ -7,17 +7,7 @@ export const TIKTOK_HANDLE = 'mima.ann.talks.peppers';
 export const TIKTOK_NAME = 'Mima Ann Talks Peppers';
 export const TIKTOK_URL = `https://www.tiktok.com/@${TIKTOK_HANDLE}`;
 
-const LAST_SHOWN_KEY = 'tiktok_popup_last_shown';
-const FOLLOWED_KEY = 'tiktok_popup_followed';
-const SHOW_AGAIN_AFTER_MS = 3 * 24 * 60 * 60 * 1000; // re-show every 3 days until they follow
-const DELAY_MS = 800; // shortly after the page loads
-
-const safeGet = (key: string) => {
-  try { return localStorage.getItem(key); } catch { return null; }
-};
-const safeSet = (key: string, value: string) => {
-  try { localStorage.setItem(key, value); } catch { /* storage unavailable */ }
-};
+const DELAY_MS = 800; // shown on every page load, shortly after it finishes
 
 const TikTokIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
@@ -25,23 +15,14 @@ const TikTokIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-const shouldShow = () => {
-  if (safeGet(FOLLOWED_KEY)) return false;
-  const last = Number(safeGet(LAST_SHOWN_KEY) || 0);
-  return Date.now() - last > SHOW_AGAIN_AFTER_MS;
-};
-
 const TikTokPopup: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!shouldShow()) return;
-
     const timer = setTimeout(() => {
       setVisible(true);
       setTikTokPopupOpen(true);
-      safeSet(LAST_SHOWN_KEY, String(Date.now()));
       posthog.capture('tiktok_popup_viewed');
     }, DELAY_MS);
 
@@ -67,7 +48,6 @@ const TikTokPopup: React.FC = () => {
   }, [visible, handleClose]);
 
   const handleFollow = () => {
-    safeSet(FOLLOWED_KEY, 'true');
     posthog.capture('tiktok_popup_follow_clicked');
     setVisible(false);
     setTikTokPopupOpen(false);
