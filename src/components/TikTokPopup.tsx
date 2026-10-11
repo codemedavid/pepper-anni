@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, ExternalLink, ScanLine, Copy, Check } from 'lucide-react';
 import posthog from '../lib/posthog';
-import { PROMO_POPUP_CLOSED_EVENT, PROMO_POPUP_SHOWN_KEY } from './PromoPopup';
+import { setTikTokPopupOpen } from '../lib/popups';
 
 export const TIKTOK_HANDLE = 'mima.ann.talks.peppers';
 export const TIKTOK_NAME = 'Mima Ann Talks Peppers';
@@ -10,8 +10,7 @@ export const TIKTOK_URL = `https://www.tiktok.com/@${TIKTOK_HANDLE}`;
 const LAST_SHOWN_KEY = 'tiktok_popup_last_shown';
 const FOLLOWED_KEY = 'tiktok_popup_followed';
 const SHOW_AGAIN_AFTER_MS = 3 * 24 * 60 * 60 * 1000; // re-show every 3 days until they follow
-const DELAY_MS = 6000;
-const DELAY_AFTER_PROMO_MS = 1500;
+const DELAY_MS = 800; // shortly after the page loads
 
 const safeGet = (key: string) => {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -39,33 +38,19 @@ const TikTokPopup: React.FC = () => {
   useEffect(() => {
     if (!shouldShow()) return;
 
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const open = (delay: number) => {
-      timer = setTimeout(() => {
-        setVisible(true);
-        safeSet(LAST_SHOWN_KEY, String(Date.now()));
-        posthog.capture('tiktok_popup_viewed');
-      }, delay);
-    };
+    const timer = setTimeout(() => {
+      setVisible(true);
+      setTikTokPopupOpen(true);
+      safeSet(LAST_SHOWN_KEY, String(Date.now()));
+      posthog.capture('tiktok_popup_viewed');
+    }, DELAY_MS);
 
-    // The email promo popup shows once on a first visit. Don't stack on top of it:
-    // wait until it's closed, then follow up with the TikTok invite.
-    const promoPending = !safeGet(PROMO_POPUP_SHOWN_KEY);
-    if (promoPending) {
-      const onPromoClosed = () => open(DELAY_AFTER_PROMO_MS);
-      window.addEventListener(PROMO_POPUP_CLOSED_EVENT, onPromoClosed, { once: true });
-      return () => {
-        window.removeEventListener(PROMO_POPUP_CLOSED_EVENT, onPromoClosed);
-        if (timer) clearTimeout(timer);
-      };
-    }
-
-    open(DELAY_MS);
-    return () => { if (timer) clearTimeout(timer); };
+    return () => clearTimeout(timer);
   }, []);
 
   const handleClose = useCallback(() => {
     setVisible(false);
+    setTikTokPopupOpen(false);
     posthog.capture('tiktok_popup_dismissed');
   }, []);
 
@@ -85,6 +70,7 @@ const TikTokPopup: React.FC = () => {
     safeSet(FOLLOWED_KEY, 'true');
     posthog.capture('tiktok_popup_follow_clicked');
     setVisible(false);
+    setTikTokPopupOpen(false);
   };
 
   const handleCopy = async () => {

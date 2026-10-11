@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import posthog, { identifyUser } from '../lib/posthog';
+import { isTikTokPopupOpen, TIKTOK_POPUP_CLOSED_EVENT } from '../lib/popups';
 
-export const PROMO_POPUP_SHOWN_KEY = 'tbs_promo_popup_shown';
-export const PROMO_POPUP_CLOSED_EVENT = 'promo-popup-closed';
-const SHOWN_KEY = PROMO_POPUP_SHOWN_KEY;
+const SHOWN_KEY = 'tbs_promo_popup_shown';
 const SUBMITTED_KEY = 'tbs_promo_popup_submitted';
 const POPUP_DELAY_MS = 2000;
+const DELAY_AFTER_TIKTOK_MS = 1500;
 
 const PromoPopup: React.FC = () => {
   const [visible, setVisible] = useState(false);
@@ -20,19 +20,34 @@ const PromoPopup: React.FC = () => {
     const wasShown = localStorage.getItem(SHOWN_KEY);
     if (wasShown) return;
 
-    const timer = setTimeout(() => {
+    const show = () => {
       setVisible(true);
       localStorage.setItem(SHOWN_KEY, 'true');
       posthog.capture('tbs_promo_popup_viewed');
+    };
+
+    let followUp: ReturnType<typeof setTimeout> | undefined;
+    const onTikTokClosed = () => { followUp = setTimeout(show, DELAY_AFTER_TIKTOK_MS); };
+
+    const timer = setTimeout(() => {
+      // Don't stack on top of the TikTok popup; follow up once it's closed.
+      if (isTikTokPopupOpen()) {
+        window.addEventListener(TIKTOK_POPUP_CLOSED_EVENT, onTikTokClosed, { once: true });
+      } else {
+        show();
+      }
     }, POPUP_DELAY_MS);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (followUp) clearTimeout(followUp);
+      window.removeEventListener(TIKTOK_POPUP_CLOSED_EVENT, onTikTokClosed);
+    };
   }, []);
 
   const handleClose = () => {
     setVisible(false);
     posthog.capture('tbs_promo_popup_dismissed');
-    window.dispatchEvent(new Event(PROMO_POPUP_CLOSED_EVENT));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
