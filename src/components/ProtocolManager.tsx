@@ -1,15 +1,40 @@
 import React, { useState, useRef } from 'react';
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, Eye, EyeOff, Upload, FileText, Image } from 'lucide-react';
-import { useProtocols, Protocol } from '../hooks/useProtocols';
-import { useImageUpload } from '../hooks/useImageUpload';
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, Eye, EyeOff, Upload, FileText, Image, Settings, Package } from 'lucide-react';
+import { useProtocols, Protocol, protocolAdmin } from '../hooks/useProtocols';
+import { useMenu } from '../hooks/useMenu';
+import { supabase } from '../lib/supabase';
+import ProtocolSettings from './ProtocolSettings';
+
+const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+
+/** Uploads a file into the private `protocol-files` bucket through a server-issued signed upload URL. */
+async function uploadProtocolFile(file: File): Promise<string> {
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+        throw new Error(`File must be less than 25MB. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+    }
+    const { path, token } = await protocolAdmin<{ path: string; token: string }>('create_upload_url', {
+        filename: file.name,
+        content_type: file.type,
+    });
+    const { error } = await supabase.storage
+        .from('protocol-files')
+        .uploadToSignedUrl(path, token, file, file.type ? { contentType: file.type } : undefined);
+    if (error) throw new Error(error.message || 'Upload failed');
+    return path;
+}
 
 interface ProtocolManagerProps {
     onBack: () => void;
 }
 
 const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
-    const { protocols, loading, addProtocol, updateProtocol, deleteProtocol, toggleActive } = useProtocols();
-    const { uploadImage, uploading, uploadProgress } = useImageUpload('protocol-files');
+    const { protocols, loading, addProtocol, updateProtocol, deleteProtocol, toggleActive, setAssignments } = useProtocols();
+    const { products } = useMenu();
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [showSettings, setShowSettings] = useState(false);
+    const [productIds, setProductIds] = useState<string[]>([]);
+    const [productSearch, setProductSearch] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [isAdding, setIsAdding] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -26,7 +51,21 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
         sort_order: 0,
         active: true,
         content_type: 'text' as 'text' | 'file' | 'image',
-        file_url: null as string | null
+        file_url: null as string | null,
+        file_path: null as string | null
+    };
+
+    const uploadImage = async (file: File): Promise<string> => {
+        setUploading(true);
+        setUploadProgress(10);
+        try {
+            const path = await uploadProtocolFile(file);
+            setUploadProgress(100);
+            return path;
+        } finally {
+            setUploading(false);
+            setTimeout(() => setUploadProgress(0), 1000);
+        }
     };
 
     const [formData, setFormData] = useState(emptyForm);
@@ -48,10 +87,13 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
             sort_order: protocol.sort_order,
             active: protocol.active,
             content_type: protocol.content_type || 'text',
-            file_url: protocol.file_url || null
+            file_url: protocol.file_url || null,
+            file_path: protocol.file_path || null
         });
+        setProductIds(protocol.product_ids ?? (protocol.product_id ? [protocol.product_id] : []));
+        setProductSearch('');
         setNotesText(protocol.notes.join('\n'));
-        setFilePreview(protocol.file_url || null);
+        setFilePreview(protocol.signed_url || protocol.file_url || null);
         setSelectedFile(null);
         setIsAdding(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -62,6 +104,8 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
         setIsAdding(true);
         setEditingId(null);
         setFormData({ ...emptyForm, sort_order: protocols.length + 1 });
+        setProductIds([]);
+        setProductSearch('');
         setNotesText('');
         setSelectedFile(null);
         setFilePreview(null);
@@ -73,6 +117,8 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
         setEditingId(null);
         setIsAdding(false);
         setFormData(emptyForm);
+        setProductIds([]);
+        setProductSearch('');
         setNotesText('');
         setSelectedFile(null);
         setFilePreview(null);
@@ -106,7 +152,7 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
             return;
         }
 
-        if ((formData.content_type === 'file' || formData.content_type === 'image') && !selectedFile && !formData.file_url) {
+        if ((formData.content_type === 'file' || formData.content_type === 'image') && !selectedFile && !formData.file_url && !formData.file_path) {
             alert(`Please upload a ${formData.content_type === 'file' ? 'file' : 'image'}`);
             return;
         }
@@ -118,16 +164,27 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
         try {
             // Upload file if selected
             if (selectedFile && (formData.content_type === 'file' || formData.content_type === 'image')) {
-                const uploadedUrl = await uploadImage(selectedFile);
-                dataToSave.file_url = uploadedUrl;
+                // Private bucket: store the object path; the server signs short-lived URLs on read.
+                dataToSave.file_path = await uploadImage(selectedFile);
+                dataToSave.file_url = null;
             }
 
             if (isAdding) {
                 const result = await addProtocol(dataToSave);
                 if (!result.success) throw new Error(result.error);
+                if (productIds.length && result.data?.id) {
+                    const assigned = await setAssignments(result.data.id, productIds);
+                    if (!assigned.success) throw new Error(assigned.error);
+                }
             } else if (editingId) {
                 const result = await updateProtocol(editingId, dataToSave);
                 if (!result.success) throw new Error(result.error);
+                const before = protocols.find(p => p.id === editingId)?.product_ids ?? [];
+                const changed = before.length !== productIds.length || before.some(id => !productIds.includes(id));
+                if (changed) {
+                    const assigned = await setAssignments(editingId, productIds);
+                    if (!assigned.success) throw new Error(assigned.error);
+                }
             }
             handleCancel();
         } catch (err) {
@@ -186,6 +243,15 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
                             <h1 className="text-xl font-bold text-gray-900">📋 Protocol Manager</h1>
                         </div>
                         {!isAdding && !editingId && (
+                            <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setShowSettings(v => !v)}
+                                className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-colors ${showSettings ? 'border-gray-900 bg-gray-100 text-gray-900' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                                aria-pressed={showSettings}
+                            >
+                                <Settings className="w-4 h-4" />
+                                Settings
+                            </button>
                             <button
                                 onClick={handleAdd}
                                 className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -193,12 +259,15 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
                                 <Plus className="w-4 h-4" />
                                 Add Protocol
                             </button>
+                            </div>
                         )}
                     </div>
                 </div>
             </div>
 
             <div className="max-w-4xl mx-auto px-4 py-6">
+                {showSettings && !isAdding && !editingId && <ProtocolSettings />}
+
                 {/* Add/Edit Form */}
                 {(isAdding || editingId) && (
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -237,7 +306,7 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        setFormData({ ...formData, content_type: 'text', file_url: null });
+                                        setFormData({ ...formData, content_type: 'text', file_url: null, file_path: null });
                                         setSelectedFile(null);
                                         setFilePreview(null);
                                     }}
@@ -364,11 +433,11 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
                                             <p className="text-xs text-gray-500">{(selectedFile.size / 1024).toFixed(1)} KB</p>
                                             <p className="text-xs text-green-600">Click to change file</p>
                                         </div>
-                                    ) : formData.file_url ? (
+                                    ) : (formData.file_url || formData.file_path) ? (
                                         <div className="flex flex-col items-center gap-2">
                                             <FileText className="w-10 h-10 text-blue-500" />
                                             <p className="text-sm font-medium text-gray-900">File already uploaded</p>
-                                            <a href={formData.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline" onClick={(e) => e.stopPropagation()}>
+                                            <a href={filePreview || formData.file_url || '#'} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline" onClick={(e) => e.stopPropagation()}>
                                                 View current file
                                             </a>
                                             <p className="text-xs text-gray-500 mt-1">Click to upload a new file</p>
@@ -418,7 +487,7 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
                                     onClick={() => fileInputRef.current?.click()}
                                     className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-gray-400 hover:bg-gray-50 transition-all"
                                 >
-                                    {filePreview || (formData.file_url && !selectedFile) ? (
+                                    {filePreview || ((formData.file_url || formData.file_path) && !selectedFile) ? (
                                         <div className="flex flex-col items-center gap-2">
                                             <img
                                                 src={filePreview || formData.file_url || ''}
@@ -457,6 +526,45 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
                             </div>
                         )}
 
+                        {/* Product assignment */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Assigned products ({productIds.length})
+                            </label>
+                            <p className="text-xs text-gray-500 mb-2">
+                                Customers who order these products get this protocol in their protocol email.
+                            </p>
+                            <input
+                                type="text"
+                                value={productSearch}
+                                onChange={(e) => setProductSearch(e.target.value)}
+                                className="w-full px-3 py-2 mb-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                                placeholder="Search products..."
+                            />
+                            <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100" role="group" aria-label="Assigned products">
+                                {products.length === 0 ? (
+                                    <p className="text-sm text-gray-500 p-3">No products found.</p>
+                                ) : (
+                                    [...products]
+                                        .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()) || productIds.includes(p.id))
+                                        .sort((a, b) => Number(productIds.includes(b.id)) - Number(productIds.includes(a.id)) || a.name.localeCompare(b.name))
+                                        .map(product => (
+                                            <label key={product.id} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-800 hover:bg-gray-50 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={productIds.includes(product.id)}
+                                                    onChange={(e) => setProductIds(prev => e.target.checked
+                                                        ? [...prev, product.id]
+                                                        : prev.filter(id => id !== product.id))}
+                                                    className="w-4 h-4 text-gray-900 rounded focus:ring-gray-900"
+                                                />
+                                                {product.name}
+                                            </label>
+                                        ))
+                                )}
+                            </div>
+                        </div>
+
                         <div className="flex items-center gap-2 mb-4">
                             <input
                                 type="checkbox"
@@ -465,7 +573,7 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
                                 onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
                                 className="w-4 h-4 text-gray-900 rounded focus:ring-gray-900"
                             />
-                            <label htmlFor="active" className="text-sm font-medium text-gray-700">Active (visible on website)</label>
+                            <label htmlFor="active" className="text-sm font-medium text-gray-700">Active (published: shown on the portal and used in future emails)</label>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -514,9 +622,14 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
                                                     <Image className="w-3 h-3" /> Image
                                                 </span>
                                             )}
-                                            {!protocol.active && (
-                                                <span className="text-xs font-medium text-red-500 bg-red-100 px-2 py-0.5 rounded">Hidden</span>
+                                            {protocol.active ? (
+                                                <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded">Active</span>
+                                            ) : (
+                                                <span className="text-xs font-medium text-gray-600 bg-gray-200 px-2 py-0.5 rounded">Draft</span>
                                             )}
+                                            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded" title="Version">
+                                                v{protocol.version ?? 1}
+                                            </span>
                                         </div>
                                         <h3 className="font-semibold text-gray-900">{protocol.name}</h3>
                                         {protocol.content_type === 'text' ? (
@@ -528,6 +641,17 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
                                                 {protocol.content_type === 'file' ? 'File attached' : 'Image attached'}
                                             </p>
                                         )}
+                                        {(() => {
+                                            const names = (protocol.product_ids ?? [])
+                                                .map(id => products.find(p => p.id === id)?.name)
+                                                .filter(Boolean);
+                                            return (
+                                                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                                    <Package className="w-3 h-3" />
+                                                    {names.length ? names.join(', ') : 'Not assigned to a product'}
+                                                </p>
+                                            );
+                                        })()}
                                     </div>
 
                                     <div className="flex items-center gap-2">

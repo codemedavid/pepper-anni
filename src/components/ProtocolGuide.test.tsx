@@ -3,14 +3,15 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProtocolGuide from './ProtocolGuide';
 import { allMockProtocols } from '../test/mocks';
+import { EdgeError } from '../lib/edgeApi';
+import { PORTAL_SESSION_KEY } from '../hooks/usePortalProtocols';
 
-// Mock useProtocols
-vi.mock('../hooks/useProtocols', () => ({
-  useProtocols: () => ({
-    protocols: allMockProtocols,
-    loading: false,
-  }),
-}));
+// The real usePortalProtocols hook runs; only the network (protocol-portal edge function) is mocked.
+const mockCallEdge = vi.fn();
+vi.mock('../lib/edgeApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/edgeApi')>();
+  return { ...actual, callEdge: (...args: unknown[]) => mockCallEdge(...args) };
+});
 
 // Mock useCart
 vi.mock('../hooks/useCart', () => ({
@@ -28,22 +29,124 @@ vi.mock('./Footer', () => ({
   default: () => <div data-testid="footer">Footer</div>,
 }));
 
+const future = () => new Date(Date.now() + 3600_000).toISOString();
+
+function portalEdge(_fn: string, body: { action: string; password?: string }, opts?: { token?: string }) {
+  if (body.action === 'unlock') {
+    return body.password === 'correct-horse'
+      ? Promise.resolve({ token: 'portal-token', expires_at: future() })
+      : Promise.reject(new EdgeError('Incorrect password', 401));
+  }
+  if (body.action === 'list') {
+    return opts?.token ? Promise.resolve({ protocols: allMockProtocols }) : Promise.reject(new EdgeError('Session expired', 401));
+  }
+  return Promise.reject(new EdgeError('Unknown action', 400));
+}
+
+/** Renders the page with a stored portal session and waits for the protocol list. */
+async function renderUnlocked() {
+  localStorage.setItem(PORTAL_SESSION_KEY, JSON.stringify({ token: 'portal-token', expires_at: future() }));
+  render(<ProtocolGuide />);
+  await screen.findByText('Tirzepatide');
+}
+
 describe('ProtocolGuide', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+    mockCallEdge.mockImplementation(portalEdge);
+  });
+
+  // --- Lock / unlock ---
+
+  describe('portal lock', () => {
+    it('shows the unlock card and no protocol content when locked', () => {
+      render(<ProtocolGuide />);
+
+      expect(screen.getByText('Peptide Protocol Guide')).toBeInTheDocument();
+      expect(screen.getByLabelText('Password')).toBeInTheDocument();
+      expect(screen.getByText(/included in your order confirmation email/)).toBeInTheDocument();
+      expect(screen.queryByText('Tirzepatide')).not.toBeInTheDocument();
+      expect(screen.queryByText('Peptide Protocols')).not.toBeInTheDocument();
+      expect(mockCallEdge).not.toHaveBeenCalled();
+    });
+
+    it('toggles password visibility', async () => {
+      render(<ProtocolGuide />);
+      const input = screen.getByLabelText('Password');
+      expect(input).toHaveAttribute('type', 'password');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Show password' }));
+      expect(input).toHaveAttribute('type', 'text');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Hide password' }));
+      expect(input).toHaveAttribute('type', 'password');
+    });
+
+    it('shows an error on a wrong password and stays locked', async () => {
+      render(<ProtocolGuide />);
+
+      await userEvent.type(screen.getByLabelText('Password'), 'wrong-pass');
+      await userEvent.click(screen.getByRole('button', { name: /Unlock Protocols/ }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Incorrect password');
+      expect(screen.queryByText('Tirzepatide')).not.toBeInTheDocument();
+      expect(localStorage.getItem(PORTAL_SESSION_KEY)).toBeNull();
+    });
+
+    it('unlocks with the correct password and stores the session', async () => {
+      render(<ProtocolGuide />);
+
+      await userEvent.type(screen.getByLabelText('Password'), 'correct-horse');
+      await userEvent.click(screen.getByRole('button', { name: /Unlock Protocols/ }));
+
+      expect(await screen.findByText('Tirzepatide')).toBeInTheDocument();
+      expect(mockCallEdge).toHaveBeenCalledWith('protocol-portal', { action: 'unlock', password: 'correct-horse' });
+      expect(mockCallEdge).toHaveBeenCalledWith('protocol-portal', { action: 'list' }, { token: 'portal-token' });
+      expect(JSON.parse(localStorage.getItem(PORTAL_SESSION_KEY)!).token).toBe('portal-token');
+    });
+
+    it('re-locks when the server rejects the session (401)', async () => {
+      localStorage.setItem(PORTAL_SESSION_KEY, JSON.stringify({ token: 'stale-token', expires_at: future() }));
+      mockCallEdge.mockImplementation(() => Promise.reject(new EdgeError('Session expired', 401)));
+
+      render(<ProtocolGuide />);
+
+      expect(await screen.findByText(/session has expired/i)).toBeInTheDocument();
+      expect(screen.getByLabelText('Password')).toBeInTheDocument();
+      expect(localStorage.getItem(PORTAL_SESSION_KEY)).toBeNull();
+    });
+
+    it('treats a locally expired session as locked without calling the server', () => {
+      localStorage.setItem(PORTAL_SESSION_KEY, JSON.stringify({ token: 't', expires_at: new Date(Date.now() - 1000).toISOString() }));
+      render(<ProtocolGuide />);
+
+      expect(screen.getByLabelText('Password')).toBeInTheDocument();
+      expect(mockCallEdge).not.toHaveBeenCalled();
+    });
+
+    it('Lock button clears the session and shows the unlock card', async () => {
+      await renderUnlocked();
+
+      await userEvent.click(screen.getByRole('button', { name: /^Lock$/ }));
+
+      expect(screen.getByLabelText('Password')).toBeInTheDocument();
+      expect(screen.queryByText('Tirzepatide')).not.toBeInTheDocument();
+      expect(localStorage.getItem(PORTAL_SESSION_KEY)).toBeNull();
+    });
   });
 
   // --- Rendering ---
 
   describe('rendering', () => {
-    it('renders the protocol guide page', () => {
-      render(<ProtocolGuide />);
+    it('renders the protocol guide page', async () => {
+      await renderUnlocked();
 
       expect(screen.getByText('Peptide Protocol Guide')).toBeInTheDocument();
     });
 
-    it('only shows active protocols', () => {
-      render(<ProtocolGuide />);
+    it('only shows active protocols', async () => {
+      await renderUnlocked();
 
       expect(screen.getByText('Tirzepatide')).toBeInTheDocument();
       expect(screen.getByText('GHK-Cu Protocol')).toBeInTheDocument();
@@ -53,8 +156,8 @@ describe('ProtocolGuide', () => {
       expect(screen.queryByText('Hidden Protocol')).not.toBeInTheDocument();
     });
 
-    it('shows protocol count', () => {
-      render(<ProtocolGuide />);
+    it('shows protocol count', async () => {
+      await renderUnlocked();
 
       expect(screen.getByText('3 protocol(s) found')).toBeInTheDocument();
     });
@@ -64,7 +167,7 @@ describe('ProtocolGuide', () => {
 
   describe('text protocol content', () => {
     it('shows dosage, frequency, duration when expanded', async () => {
-      render(<ProtocolGuide />);
+      await renderUnlocked();
 
       await userEvent.click(screen.getByText('Tirzepatide'));
 
@@ -74,7 +177,7 @@ describe('ProtocolGuide', () => {
     });
 
     it('shows protocol notes when expanded', async () => {
-      render(<ProtocolGuide />);
+      await renderUnlocked();
 
       await userEvent.click(screen.getByText('Tirzepatide'));
 
@@ -83,7 +186,7 @@ describe('ProtocolGuide', () => {
     });
 
     it('shows storage info when expanded', async () => {
-      render(<ProtocolGuide />);
+      await renderUnlocked();
 
       await userEvent.click(screen.getByText('Tirzepatide'));
 
@@ -97,7 +200,7 @@ describe('ProtocolGuide', () => {
 
   describe('image protocol content', () => {
     it('shows image when image protocol is expanded', async () => {
-      render(<ProtocolGuide />);
+      await renderUnlocked();
 
       // Click the protocol name button to expand
       const protocolButtons = screen.getAllByRole('button');
@@ -111,7 +214,7 @@ describe('ProtocolGuide', () => {
     });
 
     it('does NOT show text dosage fields for image protocol', async () => {
-      render(<ProtocolGuide />);
+      await renderUnlocked();
 
       const protocolButtons = screen.getAllByRole('button');
       const ghkButton = protocolButtons.find(btn => btn.textContent?.includes('GHK-Cu Protocol'));
@@ -127,7 +230,7 @@ describe('ProtocolGuide', () => {
 
   describe('file protocol content', () => {
     it('shows download link when file protocol is expanded', async () => {
-      render(<ProtocolGuide />);
+      await renderUnlocked();
 
       const protocolButtons = screen.getAllByRole('button');
       const bpcButton = protocolButtons.find(btn => btn.textContent?.includes('BPC-157 Protocol'));
@@ -138,7 +241,7 @@ describe('ProtocolGuide', () => {
     });
 
     it('file link opens in new tab with correct href', async () => {
-      render(<ProtocolGuide />);
+      await renderUnlocked();
 
       const protocolButtons = screen.getAllByRole('button');
       const bpcButton = protocolButtons.find(btn => btn.textContent?.includes('BPC-157 Protocol'));
@@ -155,7 +258,7 @@ describe('ProtocolGuide', () => {
 
   describe('expand and collapse', () => {
     it('collapses an expanded protocol when clicked again', async () => {
-      render(<ProtocolGuide />);
+      await renderUnlocked();
 
       await userEvent.click(screen.getByText('Tirzepatide'));
       expect(screen.getByText('2.5mg - 15mg')).toBeInTheDocument();
@@ -165,7 +268,7 @@ describe('ProtocolGuide', () => {
     });
 
     it('only one protocol is expanded at a time', async () => {
-      render(<ProtocolGuide />);
+      await renderUnlocked();
 
       // Expand Tirzepatide
       await userEvent.click(screen.getByText('Tirzepatide'));
@@ -186,8 +289,8 @@ describe('ProtocolGuide', () => {
   // --- Category Filter ---
 
   describe('category filtering', () => {
-    it('shows all categories in the filter dropdown', () => {
-      render(<ProtocolGuide />);
+    it('shows all categories in the filter dropdown', async () => {
+      await renderUnlocked();
 
       const select = screen.getByRole('combobox');
       expect(select).toBeInTheDocument();
@@ -201,7 +304,7 @@ describe('ProtocolGuide', () => {
     });
 
     it('filters protocols by category', async () => {
-      render(<ProtocolGuide />);
+      await renderUnlocked();
 
       const select = screen.getByRole('combobox');
       await userEvent.selectOptions(select, 'Weight Management');
@@ -213,7 +316,7 @@ describe('ProtocolGuide', () => {
     });
 
     it('shows all protocols when "all" is selected', async () => {
-      render(<ProtocolGuide />);
+      await renderUnlocked();
 
       const select = screen.getByRole('combobox');
       await userEvent.selectOptions(select, 'Weight Management');

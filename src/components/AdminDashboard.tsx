@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Save, X, ArrowLeft, TrendingUp, Package, Users, FolderOpen, CreditCard, Sparkles, Layers, Shield, RefreshCw, Warehouse, ShoppingCart, HelpCircle, MapPin, Tag, Truck, Star, BarChart3 } from 'lucide-react';
 import type { Product } from '../types';
 import { useMenu } from '../hooks/useMenu';
 import { useCategories } from '../hooks/useCategories';
 import { useProtocols } from '../hooks/useProtocols';
 import { generateProtocolFromTemplate } from '../lib/protocolTemplates';
+import { callEdge, EdgeError } from '../lib/edgeApi';
+import { getAdminToken, setAdminToken, clearAdminToken } from '../lib/adminSession';
 import ImageUpload from './ImageUpload';
 import CategoryManager from './CategoryManager';
 import PaymentMethodManager from './PaymentMethodManager';
@@ -23,11 +25,15 @@ import SalesAnalytics from './SalesAnalytics';
 // GuideManager removed (Peptalk functionality disabled)
 
 const AdminDashboard: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('peptide_admin_auth') === 'true';
-  });
+  // Server-side admin auth (admin-auth edge function). The token is re-validated by the server on every call.
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!getAdminToken());
+  const [mustRotate, setMustRotate] = useState(false);
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [rotateForm, setRotateForm] = useState({ current: '', next: '', confirm: '' });
+  const [rotateError, setRotateError] = useState('');
+  const [isRotating, setIsRotating] = useState(false);
   const { products, loading, addProduct, updateProduct, deleteProduct, refreshProducts } = useMenu();
   const { categories } = useCategories();
   const [currentView, setCurrentView] = useState<'dashboard' | 'products' | 'add' | 'edit' | 'categories' | 'payments' | 'inventory' | 'orders' | 'shipping' | 'coa' | 'faq' | 'settings' | 'promo-codes' | 'couriers' | 'protocols' | 'reviews' | 'analytics'>('dashboard');
@@ -36,7 +42,7 @@ const AdminDashboard: React.FC = () => {
   const [managingVariationsProductId, setManagingVariationsProductId] = useState<string | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const { addProtocol } = useProtocols();
+  const { addProtocol, setAssignments } = useProtocols({ autoFetch: false });
 
   const variationManagerProduct = managingVariationsProductId
     ? products.find((product) => product.id === managingVariationsProductId) || null
@@ -308,10 +314,15 @@ const AdminDashboard: React.FC = () => {
             if (!protocolData) {
               alert('Product updated. No matching protocol template for this category — skipped protocol creation.');
             } else {
-              await addProtocol({
+              const created = await addProtocol({
                 ...protocolData,
+                content_type: 'text',
+                file_url: null,
                 product_id: result.data.id
               });
+              if (!created.success || !created.data) throw new Error(created.error || 'Failed to create protocol');
+              const assigned = await setAssignments(created.data.id, [result.data.id]);
+              if (!assigned.success) throw new Error(assigned.error || 'Failed to assign protocol');
               console.log('✅ Protocol generated for edited product');
               alert('Product updated AND Protocol generated successfully!');
             }
@@ -366,10 +377,15 @@ const AdminDashboard: React.FC = () => {
               alert('Product saved. No matching protocol template for this category — skipped protocol creation.');
             } else if (result.data) {
               console.log('✅ Protocol generated from template:', protocolData);
-              await addProtocol({
+              const created = await addProtocol({
                 ...protocolData,
+                content_type: 'text',
+                file_url: null,
                 product_id: result.data.id
               });
+              if (!created.success || !created.data) throw new Error(created.error || 'Failed to create protocol');
+              const assigned = await setAssignments(created.data.id, [result.data.id]);
+              if (!assigned.success) throw new Error(assigned.error || 'Failed to assign protocol');
               alert('Product saved AND Protocol auto-generated successfully!');
             }
           } catch (protocolError) {
@@ -418,22 +434,97 @@ const AdminDashboard: React.FC = () => {
     count: products.filter(p => p.category === cat.id).length
   }));
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Validate a stored session on mount: optimistic, then drop to the login screen if the server rejects it.
+  useEffect(() => {
+    try { localStorage.removeItem('peptide_admin_auth'); } catch { /* legacy client-only flag */ }
+    const token = getAdminToken();
+    if (!token) return;
+    let cancelled = false;
+    callEdge<{ valid: boolean; must_rotate: boolean }>('admin-auth', { action: 'verify' }, { token })
+      .then((res) => {
+        if (cancelled) return;
+        if (!res.valid) {
+          clearAdminToken();
+          setIsAuthenticated(false);
+        } else {
+          setMustRotate(!!res.must_rotate);
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (err instanceof EdgeError && err.status === 401) {
+          clearAdminToken();
+          setIsAuthenticated(false);
+        }
+        // Network errors: stay optimistic; every admin call is re-checked server-side.
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'PepperAnni@Admin!2026') {
+    if (!password || isLoggingIn) return;
+    setIsLoggingIn(true);
+    setLoginError('');
+    try {
+      const res = await callEdge<{ token: string; must_rotate: boolean }>('admin-auth', { action: 'login', password });
+      setAdminToken(res.token);
+      setMustRotate(!!res.must_rotate);
       setIsAuthenticated(true);
-      localStorage.setItem('peptide_admin_auth', 'true');
-      setLoginError('');
-    } else {
-      setLoginError('Invalid password');
+      setPassword('');
+    } catch (err) {
+      setLoginError(err instanceof EdgeError && err.status === 401
+        ? 'Invalid password'
+        : 'Could not reach the server. Please try again.');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
   const handleLogout = () => {
+    clearAdminToken();
     setIsAuthenticated(false);
-    localStorage.removeItem('peptide_admin_auth');
+    setMustRotate(false);
     setPassword('');
+    setRotateForm({ current: '', next: '', confirm: '' });
     setCurrentView('dashboard');
+  };
+
+  const handleRotatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRotateError('');
+    if (rotateForm.next.length < 8) {
+      setRotateError('New password must be at least 8 characters.');
+      return;
+    }
+    if (rotateForm.next !== rotateForm.confirm) {
+      setRotateError('New passwords do not match.');
+      return;
+    }
+    if (rotateForm.next === rotateForm.current) {
+      setRotateError('New password must be different from the current one.');
+      return;
+    }
+    setIsRotating(true);
+    try {
+      const res = await callEdge<{ token: string }>(
+        'admin-auth',
+        { action: 'change_password', current: rotateForm.current, next: rotateForm.next },
+        { token: getAdminToken() },
+      );
+      setAdminToken(res.token);
+      setMustRotate(false);
+      setRotateForm({ current: '', next: '', confirm: '' });
+    } catch (err) {
+      if (err instanceof EdgeError && err.status === 401) {
+        handleLogout();
+        setLoginError('Session expired. Please log in again.');
+        return;
+      }
+      setRotateError(err instanceof Error ? err.message : 'Could not change password');
+    } finally {
+      setIsRotating(false);
+    }
   };
 
   const handleRefresh = async () => {
@@ -470,6 +561,7 @@ const AdminDashboard: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-navy-900 focus:border-transparent transition-colors placeholder-gray-400"
                 placeholder="Enter admin password"
+                autoComplete="current-password"
                 required
               />
               {loginError && (
@@ -479,8 +571,49 @@ const AdminDashboard: React.FC = () => {
               )}
             </div>
 
-            <button type="submit" className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg">
-              Access Dashboard
+            <button type="submit" disabled={isLoggingIn} className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-60">
+              {isLoggingIn ? 'Checking...' : 'Access Dashboard'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Forced admin password change: the seeded password was public (old JS bundle).
+  if (mustRotate) {
+    const field = 'w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-navy-900 focus:border-transparent transition-colors placeholder-gray-400';
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 w-full max-w-md border border-gray-200">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Change admin password</h1>
+            <p className="text-sm text-gray-500">
+              The current admin password is no longer secret. Choose a new one to continue.
+            </p>
+          </div>
+          <form onSubmit={handleRotatePassword} noValidate>
+            <div className="mb-4">
+              <label htmlFor="rotate-current" className="block text-sm font-medium text-gray-700 mb-2">Current password</label>
+              <input id="rotate-current" type="password" autoComplete="current-password" className={field}
+                value={rotateForm.current} onChange={(e) => setRotateForm({ ...rotateForm, current: e.target.value })} />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="rotate-next" className="block text-sm font-medium text-gray-700 mb-2">New password</label>
+              <input id="rotate-next" type="password" autoComplete="new-password" className={field} placeholder="At least 8 characters"
+                value={rotateForm.next} onChange={(e) => setRotateForm({ ...rotateForm, next: e.target.value })} />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="rotate-confirm" className="block text-sm font-medium text-gray-700 mb-2">Confirm new password</label>
+              <input id="rotate-confirm" type="password" autoComplete="new-password" className={field}
+                value={rotateForm.confirm} onChange={(e) => setRotateForm({ ...rotateForm, confirm: e.target.value })} />
+            </div>
+            {rotateError && <p className="text-red-500 text-sm mb-4" role="alert">{rotateError}</p>}
+            <button type="submit" disabled={isRotating} className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-lg font-semibold transition-all shadow-md disabled:opacity-60">
+              {isRotating ? 'Saving...' : 'Change password'}
+            </button>
+            <button type="button" onClick={handleLogout} className="w-full mt-3 text-sm text-gray-500 hover:text-gray-900">
+              Log out
             </button>
           </form>
         </div>
