@@ -1,4 +1,4 @@
-project_id = "wdebbxcykvztyxfrrrxp"
+project_id = "fjtzqgnhfgrbwylgamcz"
 
 # Telegram order bot edge functions.
 # These are called by Postgres (pg_net) and by Telegram, neither of which can send

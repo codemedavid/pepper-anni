@@ -4,7 +4,7 @@ Deploys Feature A (automated protocol emails) and Feature B (password-protected 
 Do the steps **in order**. Deploy the site (Vercel) **after** steps 1–3. The new site needs the new
 edge functions, and the old site can't read protocols once the lockdown migration runs.
 
-Project ref: `wdebbxcykvztyxfrrrxp` (from `supabase/config.toml`).
+Project ref: `fjtzqgnhfgrbwylgamcz` (from `supabase/config.toml`).
 
 ## 1. Create the Vault secrets
 In the Supabase dashboard, open **SQL editor** and run this once, using your own random values (32+ characters each,
@@ -19,7 +19,7 @@ Keep `<random-3>` handy. It goes into the PostHog webhook header in step 6.
 
 ## 2. Apply the migrations
 ```bash
-supabase link --project-ref wdebbxcykvztyxfrrrxp
+supabase link --project-ref fjtzqgnhfgrbwylgamcz
 supabase db push
 ```
 Or paste these into the SQL editor, in this order:
@@ -31,7 +31,7 @@ Check that the config row picked up the edge-function URL and PostHog key from t
 ```sql
 select enabled, function_base_url, posthog_project_key, site_url, link_ttl_days from protocol_config;
 ```
-If `function_base_url` is empty, set it to `https://wdebbxcykvztyxfrrrxp.supabase.co/functions/v1`.
+If `function_base_url` is empty, set it to `https://fjtzqgnhfgrbwylgamcz.supabase.co/functions/v1`.
 
 ## 3. Deploy the edge functions
 ```bash
