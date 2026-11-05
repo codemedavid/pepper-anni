@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS admin_credentials (
 ALTER TABLE admin_credentials ENABLE ROW LEVEL SECURITY;
 -- Seed with the CURRENT admin password so login keeps working after deploy; the UI forces a change.
 INSERT INTO admin_credentials (id, password_hash)
-VALUES (TRUE, crypt('PepperAnni@Admin!2026', gen_salt('bf')))
+VALUES (TRUE, extensions.crypt('PepperAnni@Admin!2026', extensions.gen_salt('bf')))
 ON CONFLICT (id) DO NOTHING;
 
 -- Password helpers (service_role only)
