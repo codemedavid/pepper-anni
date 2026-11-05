@@ -1,13 +1,94 @@
 import React, { useState } from 'react';
-import { ArrowLeft, FlaskConical, Syringe, Thermometer, Clock, AlertTriangle, ChevronDown, ChevronUp, BookOpen, FileText, Download } from 'lucide-react';
+import { ArrowLeft, FlaskConical, Syringe, Thermometer, Clock, ChevronDown, ChevronUp, BookOpen, FileText, Download, Lock, Eye, EyeOff, KeyRound } from 'lucide-react';
 import Header from './Header';
 import Footer from './Footer';
 import { useCart } from '../hooks/useCart';
-import { useProtocols } from '../hooks/useProtocols';
+import { usePortalProtocols } from '../hooks/usePortalProtocols';
+
+interface UnlockCardProps {
+    onUnlock: (password: string) => Promise<{ success: boolean; error?: string }>;
+    unlocking: boolean;
+    error: string | null;
+}
+
+const UnlockCard: React.FC<UnlockCardProps> = ({ onUnlock, unlocking, error }) => {
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!password || unlocking) return;
+        const result = await onUnlock(password);
+        if (result.success) setPassword('');
+    };
+
+    return (
+        <div className="bg-white rounded-2xl shadow-soft border border-brand-100 p-6 sm:p-8 max-w-md mx-auto">
+            <div className="w-14 h-14 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-6 h-6 text-rose-500" />
+            </div>
+            <h2 className="font-heading text-xl font-semibold text-charcoal-900 text-center mb-1">
+                Protocols are for customers
+            </h2>
+            <p className="text-sm text-charcoal-600 text-center mb-6">
+                Enter the protocol password to view dosing protocols and downloads.
+            </p>
+
+            <form onSubmit={handleSubmit} noValidate>
+                <label htmlFor="protocol-password" className="block text-sm font-medium text-charcoal-700 mb-2">
+                    Password
+                </label>
+                <div className="relative">
+                    <input
+                        id="protocol-password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="current-password"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        aria-invalid={!!error}
+                        aria-describedby={error ? 'protocol-password-error' : 'protocol-password-help'}
+                        className={`w-full pl-4 pr-12 py-3 text-base rounded-xl bg-white border ${error ? 'border-red-300' : 'border-brand-200'} text-charcoal-800 shadow-soft focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all`}
+                        placeholder="Enter password"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(v => !v)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        className="absolute inset-y-0 right-0 px-4 flex items-center text-charcoal-400 hover:text-rose-500 transition-colors"
+                    >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                </div>
+
+                {error && (
+                    <p id="protocol-password-error" role="alert" className="text-sm text-red-600 mt-2">
+                        {error}
+                    </p>
+                )}
+
+                <button
+                    type="submit"
+                    disabled={!password || unlocking}
+                    className="w-full mt-4 inline-flex items-center justify-center gap-2 px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-2xl shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                    <KeyRound className="w-4 h-4" />
+                    {unlocking ? 'Unlocking...' : 'Unlock Protocols'}
+                </button>
+            </form>
+
+            <p id="protocol-password-help" className="text-xs text-charcoal-500 text-center mt-4">
+                The password is included in your order confirmation email. Can't find it? Message the shop and we'll send it to you.
+            </p>
+        </div>
+    );
+};
 
 const ProtocolGuide: React.FC = () => {
     const { cartItems } = useCart();
-    const { protocols, loading } = useProtocols();
+    const { protocols, loading, locked, unlock, lock, unlocking, error } = usePortalProtocols();
     const [expandedProtocol, setExpandedProtocol] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -65,6 +146,21 @@ const ProtocolGuide: React.FC = () => {
                 </div>
 
 
+
+                {locked ? (
+                    <UnlockCard onUnlock={unlock} unlocking={unlocking} error={error} />
+                ) : (
+                <>
+                <div className="flex justify-end -mt-6 mb-4">
+                    <button
+                        onClick={lock}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 border border-brand-200 text-xs font-medium text-charcoal-600 hover:text-rose-500 shadow-soft transition-colors"
+                        title="Lock protocols on this device"
+                    >
+                        <Lock className="w-3.5 h-3.5" />
+                        Lock
+                    </button>
+                </div>
 
                 {/* General Guidelines */}
                 <div className="bg-white rounded-2xl shadow-soft border border-brand-100 p-6 mb-8">
@@ -246,6 +342,12 @@ const ProtocolGuide: React.FC = () => {
                             </div>
                         ))}
                     </div>
+                )}
+
+                {error && !loading && (
+                    <p role="alert" className="text-sm text-red-600 text-center mt-4">{error}</p>
+                )}
+                </>
                 )}
 
                 {/* CTA */}

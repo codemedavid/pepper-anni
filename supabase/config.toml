@@ -1,4 +1,4 @@
-project_id = "wdebbxcykvztyxfrrrxp"
+project_id = "fjtzqgnhfgrbwylgamcz"
 
 # Telegram order bot edge functions.
 # These are called by Postgres (pg_net) and by Telegram, neither of which can send
@@ -8,4 +8,22 @@ project_id = "wdebbxcykvztyxfrrrxp"
 verify_jwt = false
 
 [functions.telegram-webhook]
+verify_jwt = false
+
+# Protocol automation edge functions. They authenticate with their own headers
+# (signed admin/portal session tokens, or Vault shared secrets for pg_net / PostHog),
+# so the gateway JWT check must be off.
+[functions.admin-auth]
+verify_jwt = false
+
+[functions.protocol-admin]
+verify_jwt = false
+
+[functions.protocol-portal]
+verify_jwt = false
+
+[functions.protocol-delivery]
+verify_jwt = false
+
+[functions.protocol-delivery-status]
 verify_jwt = false

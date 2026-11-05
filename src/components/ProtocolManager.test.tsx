@@ -1,35 +1,53 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProtocolManager from './ProtocolManager';
-import { allMockProtocols, mockImageProtocol } from '../test/mocks';
+import { allMockProtocols, mockImageProtocol, mockTextProtocol } from '../test/mocks';
 
-// Mock useProtocols hook
-const mockAddProtocol = vi.fn().mockResolvedValue({ success: true });
+const PRODUCT_A = '11111111-1111-1111-1111-111111111111';
+const PRODUCT_B = '22222222-2222-2222-2222-222222222222';
+
+const protocolsWithMeta = allMockProtocols.map((p, i) => ({
+  ...p,
+  version: i + 1,
+  product_ids: p.id === mockTextProtocol.id ? [PRODUCT_A] : [],
+}));
+
+// Mock useProtocols hook (admin edge API)
+const mockAddProtocol = vi.fn().mockResolvedValue({ success: true, data: { id: 'new-proto' } });
 const mockUpdateProtocol = vi.fn().mockResolvedValue({ success: true });
 const mockDeleteProtocol = vi.fn().mockResolvedValue({ success: true });
 const mockToggleActive = vi.fn().mockResolvedValue({ success: true });
+const mockSetAssignments = vi.fn().mockResolvedValue({ success: true });
+const mockProtocolAdmin = vi.fn();
 
 vi.mock('../hooks/useProtocols', () => ({
   useProtocols: () => ({
-    protocols: allMockProtocols,
+    protocols: protocolsWithMeta,
     loading: false,
     addProtocol: mockAddProtocol,
     updateProtocol: mockUpdateProtocol,
     deleteProtocol: mockDeleteProtocol,
     toggleActive: mockToggleActive,
+    setAssignments: mockSetAssignments,
+  }),
+  protocolAdmin: (...args: unknown[]) => mockProtocolAdmin(...args),
+}));
+
+vi.mock('../hooks/useMenu', () => ({
+  useMenu: () => ({
+    products: [
+      { id: PRODUCT_A, name: 'Tirzepatide 10mg' },
+      { id: PRODUCT_B, name: 'BPC-157 5mg' },
+    ],
   }),
 }));
 
-// Mock useImageUpload hook
-const mockUploadImage = vi.fn().mockResolvedValue('https://test.supabase.co/storage/v1/object/public/protocol-files/uploaded.png');
-
-vi.mock('../hooks/useImageUpload', () => ({
-  useImageUpload: () => ({
-    uploadImage: mockUploadImage,
-    uploading: false,
-    uploadProgress: 0,
-  }),
+// Private bucket upload through a server-issued signed upload URL
+const mockUploadToSignedUrl = vi.fn().mockResolvedValue({ data: { path: 'up.pdf' }, error: null });
+const mockStorageFrom = vi.fn((_bucket: string) => ({ uploadToSignedUrl: mockUploadToSignedUrl }));
+vi.mock('../lib/supabase', () => ({
+  supabase: { storage: { from: (bucket: string) => mockStorageFrom(bucket) } },
 }));
 
 describe('ProtocolManager', () => {
@@ -37,6 +55,14 @@ describe('ProtocolManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockProtocolAdmin.mockImplementation((action: string) => {
+      if (action === 'create_upload_url') return Promise.resolve({ path: '123-abc.pdf', token: 'upload-token' });
+      if (action === 'get_portal_settings') {
+        return Promise.resolve({ has_password: true, password: 'portal-secret-1', updated_at: '2026-11-01T00:00:00Z', session_hours: 720 });
+      }
+      if (action === 'set_portal_password') return Promise.resolve({ password_version: 2 });
+      return Promise.reject(new Error('unexpected ' + action));
+    });
   });
 
   // --- Rendering Tests ---
@@ -79,10 +105,25 @@ describe('ProtocolManager', () => {
       expect(screen.getByText('Image attached')).toBeInTheDocument();
     });
 
-    it('shows Hidden badge for inactive protocols', () => {
+    it('shows Draft badge for inactive and Active badge for published protocols', () => {
       render(<ProtocolManager onBack={mockOnBack} />);
 
-      expect(screen.getByText('Hidden')).toBeInTheDocument();
+      expect(screen.getAllByText('Draft')).toHaveLength(1);
+      expect(screen.getAllByText('Active')).toHaveLength(3);
+    });
+
+    it('shows the version number on each protocol', () => {
+      render(<ProtocolManager onBack={mockOnBack} />);
+
+      expect(screen.getByText('v1')).toBeInTheDocument();
+      expect(screen.getByText('v4')).toBeInTheDocument();
+    });
+
+    it('shows assigned product names', () => {
+      render(<ProtocolManager onBack={mockOnBack} />);
+
+      expect(screen.getByText('Tirzepatide 10mg')).toBeInTheDocument();
+      expect(screen.getAllByText('Not assigned to a product')).toHaveLength(3);
     });
 
     it('shows Add Protocol button', () => {
@@ -326,6 +367,129 @@ describe('ProtocolManager', () => {
       expect(screen.getByDisplayValue('BPC-157 Protocol')).toBeInTheDocument();
       expect(screen.getByText('File already uploaded')).toBeInTheDocument();
       expect(screen.getByText('View current file')).toBeInTheDocument();
+    });
+  });
+
+  // --- Uploads & assignments ---
+
+  describe('private uploads and product assignment', () => {
+    it('uploads a file through a signed upload URL and saves file_path', async () => {
+      render(<ProtocolManager onBack={mockOnBack} />);
+
+      await userEvent.click(screen.getByText('Add Protocol'));
+      await userEvent.type(screen.getByPlaceholderText('e.g., Tirzepatide'), 'PDF Protocol');
+      await userEvent.type(screen.getByPlaceholderText('e.g., Weight Management'), 'Docs');
+
+      const fileButtons = screen.getAllByText('File');
+      const fileTypeButton = fileButtons.find(el => el.closest('button')?.className.includes('border-2'));
+      await userEvent.click(fileTypeButton!);
+
+      const file = new File(['%PDF-1.4 test content'], 'guide.pdf', { type: 'application/pdf' });
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await userEvent.upload(input, file);
+
+      await userEvent.click(screen.getByText('Save Protocol'));
+
+      await waitFor(() => expect(mockAddProtocol).toHaveBeenCalled());
+      expect(mockProtocolAdmin).toHaveBeenCalledWith('create_upload_url', { filename: 'guide.pdf', content_type: 'application/pdf' });
+      expect(mockStorageFrom).toHaveBeenCalledWith('protocol-files');
+      expect(mockUploadToSignedUrl).toHaveBeenCalledWith('123-abc.pdf', 'upload-token', file, { contentType: 'application/pdf' });
+      expect(mockAddProtocol).toHaveBeenCalledWith(expect.objectContaining({
+        content_type: 'file', file_path: '123-abc.pdf', file_url: null,
+      }));
+    });
+
+    it('assigns products to a new protocol', async () => {
+      render(<ProtocolManager onBack={mockOnBack} />);
+
+      await userEvent.click(screen.getByText('Add Protocol'));
+      await userEvent.type(screen.getByPlaceholderText('e.g., Tirzepatide'), 'Stack');
+      await userEvent.type(screen.getByPlaceholderText('e.g., Weight Management'), 'Cat');
+      await userEvent.type(screen.getByPlaceholderText('e.g., 2.5mg - 15mg'), '1mg');
+
+      const group = screen.getByRole('group', { name: 'Assigned products' });
+      await userEvent.click(within(group).getByLabelText('BPC-157 5mg'));
+
+      await userEvent.click(screen.getByText('Save Protocol'));
+
+      await waitFor(() => expect(mockSetAssignments).toHaveBeenCalledWith('new-proto', [PRODUCT_B]));
+    });
+
+    it('pre-selects and updates assignments when editing', async () => {
+      render(<ProtocolManager onBack={mockOnBack} />);
+
+      await userEvent.click(screen.getAllByTitle('Edit')[0]); // Tirzepatide, assigned to PRODUCT_A
+      const group = screen.getByRole('group', { name: 'Assigned products' });
+      expect(within(group).getByLabelText('Tirzepatide 10mg')).toBeChecked();
+
+      await userEvent.click(within(group).getByLabelText('BPC-157 5mg'));
+      await userEvent.click(screen.getByText('Save Protocol'));
+
+      await waitFor(() => expect(mockSetAssignments).toHaveBeenCalledWith('proto-1', [PRODUCT_A, PRODUCT_B]));
+      expect(mockUpdateProtocol).toHaveBeenCalledWith('proto-1', expect.objectContaining({ name: 'Tirzepatide' }));
+    });
+
+    it('does not re-save assignments when they did not change', async () => {
+      render(<ProtocolManager onBack={mockOnBack} />);
+
+      await userEvent.click(screen.getAllByTitle('Edit')[0]);
+      await userEvent.click(screen.getByText('Save Protocol'));
+
+      await waitFor(() => expect(mockUpdateProtocol).toHaveBeenCalled());
+      expect(mockSetAssignments).not.toHaveBeenCalled();
+    });
+  });
+
+  // --- Portal password settings ---
+
+  describe('portal password settings', () => {
+    it('shows the current password hidden by default and reveals it', async () => {
+      render(<ProtocolManager onBack={mockOnBack} />);
+
+      await userEvent.click(screen.getByRole('button', { name: /Settings/ }));
+
+      const pw = await screen.findByTestId('current-portal-password');
+      expect(pw).not.toHaveTextContent('portal-secret-1');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Show current password' }));
+      expect(pw).toHaveTextContent('portal-secret-1');
+    });
+
+    it('validates minimum length and confirmation', async () => {
+      render(<ProtocolManager onBack={mockOnBack} />);
+      await userEvent.click(screen.getByRole('button', { name: /Settings/ }));
+      await screen.findByTestId('current-portal-password');
+
+      await userEvent.type(screen.getByLabelText('New password'), 'short');
+      await userEvent.type(screen.getByLabelText('Confirm password'), 'short');
+      await userEvent.click(screen.getByText('Save portal password'));
+      expect(screen.getByRole('alert')).toHaveTextContent('at least 8 characters');
+
+      await userEvent.clear(screen.getByLabelText('New password'));
+      await userEvent.type(screen.getByLabelText('New password'), 'longenough1');
+      await userEvent.click(screen.getByText('Save portal password'));
+      expect(screen.getByRole('alert')).toHaveTextContent('do not match');
+      expect(mockProtocolAdmin).not.toHaveBeenCalledWith('set_portal_password', expect.anything());
+    });
+
+    it('warns and saves a new portal password', async () => {
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+      render(<ProtocolManager onBack={mockOnBack} />);
+      await userEvent.click(screen.getByRole('button', { name: /Settings/ }));
+      await screen.findByTestId('current-portal-password');
+
+      expect(screen.getByText(/logs everyone out of the protocol portal/)).toBeInTheDocument();
+
+      await userEvent.type(screen.getByLabelText('New password'), 'new-portal-pass');
+      await userEvent.type(screen.getByLabelText('Confirm password'), 'new-portal-pass');
+      await userEvent.click(screen.getByText('Save portal password'));
+
+      await waitFor(() =>
+        expect(mockProtocolAdmin).toHaveBeenCalledWith('set_portal_password', { password: 'new-portal-pass' }),
+      );
+      expect(confirmSpy).toHaveBeenCalled();
+      expect(await screen.findByText(/Portal password saved/)).toBeInTheDocument();
+      confirmSpy.mockRestore();
     });
   });
 

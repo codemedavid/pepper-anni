@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useMenu } from '../hooks/useMenu';
 import { useCouriers } from '../hooks/useCouriers';
 import posthog from '../lib/posthog';
+import { OrderProtocolEmailPanel } from './ProtocolDeliveriesManager';
 
 interface OrderItem {
   product_id: string;
@@ -760,6 +761,9 @@ const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({
               )}
             </div>
           </div>
+
+          {/* Protocol email status + resend */}
+          <OrderProtocolEmailPanel key={`${order.id}-${order.order_status}`} orderId={order.id} orderStatus={order.order_status} />
 
           {/* Customer Info */}
           <div>
