@@ -31,7 +31,12 @@ vi.mock('./Footer', () => ({
 
 const future = () => new Date(Date.now() + 3600_000).toISOString();
 
-function portalEdge(_fn: string, body: { action: string; password?: string }, opts?: { token?: string }) {
+function portalEdge(_fn: string, body: { action: string; password?: string; token?: string }, opts?: { token?: string }) {
+  if (body.action === 'redeem') {
+    return body.token === 'good-link'
+      ? Promise.resolve({ token: 'portal-token', expires_at: future() })
+      : Promise.reject(new EdgeError('This link has expired. Please enter the password.', 401));
+  }
   if (body.action === 'unlock') {
     return body.password === 'correct-horse'
       ? Promise.resolve({ token: 'portal-token', expires_at: future() })
@@ -55,6 +60,7 @@ describe('ProtocolGuide', () => {
     vi.clearAllMocks();
     localStorage.clear();
     mockCallEdge.mockImplementation(portalEdge);
+    window.history.replaceState(null, '', '/protocols');
   });
 
   // --- Lock / unlock ---
@@ -104,6 +110,28 @@ describe('ProtocolGuide', () => {
       expect(mockCallEdge).toHaveBeenCalledWith('protocol-portal', { action: 'unlock', password: 'correct-horse' });
       expect(mockCallEdge).toHaveBeenCalledWith('protocol-portal', { action: 'list' }, { token: 'portal-token' });
       expect(JSON.parse(localStorage.getItem(PORTAL_SESSION_KEY)!).token).toBe('portal-token');
+    });
+
+    it('opens the portal without a password from the email link and clears the token from the URL', async () => {
+      window.history.replaceState(null, '', '/protocols#access=good-link');
+      render(<ProtocolGuide />);
+
+      expect(screen.queryByLabelText('Password')).not.toBeInTheDocument();
+      expect(await screen.findByText('Tirzepatide')).toBeInTheDocument();
+      expect(mockCallEdge).toHaveBeenCalledWith('protocol-portal', { action: 'redeem', token: 'good-link' });
+      expect(mockCallEdge).toHaveBeenCalledWith('protocol-portal', { action: 'list' }, { token: 'portal-token' });
+      expect(JSON.parse(localStorage.getItem(PORTAL_SESSION_KEY)!).token).toBe('portal-token');
+      expect(window.location.hash).toBe('');
+    });
+
+    it('falls back to the password card when the email link has expired', async () => {
+      window.history.replaceState(null, '', '/protocols#access=old-link');
+      render(<ProtocolGuide />);
+
+      expect(await screen.findByText(/link has expired/i)).toBeInTheDocument();
+      expect(screen.getByLabelText('Password')).toBeInTheDocument();
+      expect(localStorage.getItem(PORTAL_SESSION_KEY)).toBeNull();
+      expect(window.location.hash).toBe('');
     });
 
     it('re-locks when the server rejects the session (401)', async () => {

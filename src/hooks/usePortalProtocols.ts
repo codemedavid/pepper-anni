@@ -35,6 +35,27 @@ function writeSession(s: PortalSession | null): void {
     }
 }
 
+// One-click links in protocol emails look like /protocols#access=<token>. The token is in the fragment, so it
+// never reaches the web server; it is removed from the address bar as soon as the page reads it.
+const ACCESS_PARAM = 'access';
+
+function readLinkToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    const hash = window.location.hash.replace(/^#/, '');
+    if (!hash) return null;
+    const token = new URLSearchParams(hash).get(ACCESS_PARAM);
+    return token && token.length <= 1000 ? token : null;
+}
+
+function clearLinkToken(): void {
+    try {
+        const { pathname, search } = window.location;
+        window.history.replaceState(window.history.state, '', pathname + search);
+    } catch {
+        /* history unavailable: leave the address bar as it is */
+    }
+}
+
 /**
  * Public protocol portal. Protocol content is only returned by the server after the portal password
  * has been entered; file/image protocols come back with short-lived signed URLs in `file_url`.
@@ -42,7 +63,7 @@ function writeSession(s: PortalSession | null): void {
 export function usePortalProtocols() {
     const [session, setSession] = useState<PortalSession | null>(() => readSession());
     const [protocols, setProtocols] = useState<Protocol[]>([]);
-    const [loading, setLoading] = useState<boolean>(() => !!readSession());
+    const [loading, setLoading] = useState<boolean>(() => !!readSession() || !!readLinkToken());
     const [unlocking, setUnlocking] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -78,6 +99,26 @@ export function usePortalProtocols() {
     useEffect(() => {
         if (session?.token) fetchProtocols(session.token);
     }, [session?.token, fetchProtocols]);
+
+    // Opened from the email button: swap the link token for a normal portal session (no password needed).
+    useEffect(() => {
+        const linkToken = readLinkToken();
+        if (!linkToken) return;
+        clearLinkToken();
+        // `loading` already starts true when a link token is present; the list fetch then clears it.
+        callEdge<PortalSession>('protocol-portal', { action: 'redeem', token: linkToken })
+            .then((s) => {
+                writeSession(s);
+                setSession(s);
+                setError(null);
+            })
+            .catch(() => {
+                // Keep a session the visitor already has; otherwise fall back to the password card.
+                if (readSession()) return;
+                setLoading(false);
+                setError('This link has expired. Please enter the password from your email.');
+            });
+    }, []);
 
     const unlock = useCallback(async (password: string): Promise<{ success: boolean; error?: string }> => {
         if (!password) return { success: false, error: 'Please enter the password' };

@@ -5,6 +5,7 @@
 //
 // Actions (POST JSON):
 //   { action: 'unlock', password } -> { token, expires_at }        (portal session, `session_hours` TTL)
+//   { action: 'redeem', token }    -> { token, expires_at }        (one-click link token from a protocol email)
 //   { action: 'list' }             -> { protocols, expires_at }    (portal or admin token; 401 when invalid/expired)
 //
 // File/image protocols stored in the private `protocol-files` bucket are returned with a 1-hour signed URL
@@ -35,6 +36,17 @@ async function failureDelay(req: Request): Promise<void> {
 const PUBLIC_COLUMNS =
   "id, name, category, dosage, frequency, duration, notes, storage, sort_order, active, content_type, file_url, file_path, version, created_at, updated_at";
 
+async function issueSession(pv: number): Promise<Response> {
+  const { data: settings } = await admin
+    .from("protocol_portal_settings")
+    .select("session_hours")
+    .eq("id", true)
+    .maybeSingle();
+  const hours = settings?.session_hours ?? 720;
+  const token = await signToken("portal", pv, hours);
+  return json({ token, expires_at: new Date(Date.now() + hours * 3600_000).toISOString() });
+}
+
 Deno.serve(async (req) => {
   const pre = preflight(req);
   if (pre) return pre;
@@ -59,14 +71,20 @@ Deno.serve(async (req) => {
         return errorJson(GENERIC_ERROR, 401);
       }
       failures.delete(clientKey(req));
-      const { data: settings } = await admin
-        .from("protocol_portal_settings")
-        .select("session_hours")
-        .eq("id", true)
-        .maybeSingle();
-      const hours = settings?.session_hours ?? 720;
-      const token = await signToken("portal", pv, hours);
-      return json({ token, expires_at: new Date(Date.now() + hours * 3600_000).toISOString() });
+      return issueSession(pv);
+    }
+
+    if (body.action === "redeem") {
+      // One-click link from a protocol email. The link token is signed with the portal password version,
+      // so changing the portal password also disables every link already sent.
+      const link = typeof body.token === "string" && body.token.length <= 1000
+        ? await verifyToken(body.token, "portal_link")
+        : null;
+      if (!link) {
+        await failureDelay(req);
+        return errorJson("This link has expired. Please enter the password.", 401);
+      }
+      return issueSession(link.pv);
     }
 
     if (body.action === "list") {

@@ -30,11 +30,25 @@ This runbook covers the PostHog side of Feature A. The code side (DB trigger, `p
 | `protocols_html` | Ready-made protocol cards (HTML, every field already escaped server-side) |
 | `protocols_text` | Plain-text version, including the portal link and password |
 | `protocols` | Structured array for the fallback template (see *Escaping fallback*) |
-| `portal_url` | `https://pepperanni.com/protocols` (`protocol_config.site_url` + `/protocols`) |
+| `portal_url` | One-click portal link: `https://pepperanni.com/protocols#access=<token>`. Opens the portal without the password (see below). Plain `/protocols` URL when no portal password is set |
+| `portal_base_url` | `https://pepperanni.com/protocols` (`protocol_config.site_url` + `/protocols`) |
 | `portal_password` | Current portal password, or `null` when none is set |
 | `link_ttl_days` | `30` (signed download links expire after this) |
 | `trigger_source` | `auto` or `manual` |
 | `$set` | `{email, name}` on the person |
+
+---
+
+### One-click portal link
+
+The **Open Protocol Portal** button uses `portal_url`, which carries a signed access token after `#access=`.
+The portal page swaps it for a normal portal session, so the customer doesn't type the password. The token:
+
+- is in the URL fragment, so it never reaches the web server or its logs, and the page removes it from the address bar;
+- expires after `link_ttl_days` (30 by default, the same as the download links);
+- stops working when the portal password changes (Admin → Protocols → Settings). Old emails then fall back to the password prompt.
+
+The password is still printed in the email as a backup. The email template needs no change for this.
 
 ---
 

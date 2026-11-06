@@ -14,7 +14,7 @@
 // "Send" = PostHog capture of `tbs_protocols_ready` (distinct_id = customer email). The PostHog Workflow
 // sends the email; PostHog engagement events come back through `protocol-delivery-status`.
 import { admin, errorJson, getSecret, json, preflight, readJson, safeEqual, sessionTokenFrom } from "../_shared/http.ts";
-import { requireAdmin } from "../_shared/session.ts";
+import { requireAdmin, signToken } from "../_shared/session.ts";
 import {
   type AssignmentLike,
   buildSubject,
@@ -67,6 +67,8 @@ interface BuiltEmail {
   protocolsHtml: string;
   protocolsText: string;
   portalUrl: string;
+  /** One-click link that opens the portal without the password, or null when no portal password is set. */
+  portalLinkUrl: string | null;
   portalPassword: string | null;
   linkTtlDays: number;
 }
@@ -152,12 +154,19 @@ async function buildEmail(order: OrderRow, cfg: ConfigRow): Promise<BuiltEmail> 
 
   const { data: portal } = await admin
     .from("protocol_portal_settings")
-    .select("password_plain")
+    .select("password_plain, password_hash, password_version")
     .eq("id", true)
     .maybeSingle();
   const portalPassword = (portal?.password_plain as string | null) ?? null;
   const portalUrl = `${(cfg.site_url || "https://pepperanni.com").replace(/\/+$/, "")}/protocols`;
-  const opts = { portalUrl, portalPassword, linkTtlDays };
+  // The token goes in the URL fragment (#), so it is never sent to the web server or written to its logs.
+  // It lasts as long as the signed download links and stops working when the portal password changes.
+  let portalLinkUrl: string | null = null;
+  if (portal?.password_hash && typeof portal.password_version === "number") {
+    const linkToken = await signToken("portal_link", portal.password_version, linkTtlDays * 24);
+    portalLinkUrl = `${portalUrl}#access=${linkToken}`;
+  }
+  const opts = { portalUrl, portalLinkUrl, portalPassword, linkTtlDays };
 
   return {
     protocols: withLinks,
@@ -165,6 +174,7 @@ async function buildEmail(order: OrderRow, cfg: ConfigRow): Promise<BuiltEmail> 
     protocolsHtml: renderProtocolsHtml(withLinks, opts),
     protocolsText: renderProtocolsText(withLinks, opts),
     portalUrl,
+    portalLinkUrl,
     portalPassword,
     linkTtlDays,
   };
@@ -232,7 +242,9 @@ async function deliver(delivery: DeliveryRow, order: OrderRow, cfg: ConfigRow): 
     protocols_text: built.protocolsText,
     // Structured copy for the Liquid {% for %} fallback template (see POSTHOG_SETUP.md).
     protocols: toTemplateProtocols(built.protocols),
-    portal_url: built.portalUrl,
+    // The email button uses portal_url, so it is the one-click link whenever one could be made.
+    portal_url: built.portalLinkUrl ?? built.portalUrl,
+    portal_base_url: built.portalUrl,
     portal_password: built.portalPassword,
     link_ttl_days: built.linkTtlDays,
     trigger_source: delivery.trigger_source,
@@ -346,7 +358,12 @@ async function handlePreview(orderId: unknown): Promise<Response> {
   if (!order) return errorJson("order not found", 404);
   const cfg = await loadConfig();
   const built = await buildEmail(order, cfg);
-  const opts = { portalUrl: built.portalUrl, portalPassword: built.portalPassword, linkTtlDays: built.linkTtlDays };
+  const opts = {
+    portalUrl: built.portalUrl,
+    portalLinkUrl: built.portalLinkUrl,
+    portalPassword: built.portalPassword,
+    linkTtlDays: built.linkTtlDays,
+  };
   const email = (order.customer_email || "").trim();
   return json({
     ok: true,

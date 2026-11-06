@@ -49,6 +49,8 @@ export interface EmailProtocol extends ResolvedProtocol {
 
 export interface RenderOptions {
   portalUrl?: string | null;
+  /** One-click portal link (portalUrl + `#access=<token>`); opens the portal without the password. */
+  portalLinkUrl?: string | null;
   portalPassword?: string | null;
   linkTtlDays?: number | null;
 }
@@ -278,6 +280,7 @@ export function renderProtocolsHtml(protocols: EmailProtocol[], opts: RenderOpti
 export function renderPortalHtml(opts: RenderOptions): string {
   const url = safeUrl(opts.portalUrl ?? null);
   if (!url) return '';
+  const href = safeUrl(opts.portalLinkUrl ?? null) ?? url;
   const pw = opts.portalPassword
     ? `<p style="margin: 8px 0 0; font-family: ${FONT}; font-size: 14px; color: ${COLORS.text};">Password: ` +
       `<strong style="font-family: 'Courier New', monospace; color: ${COLORS.heading};">${escapeHtml(opts.portalPassword)}</strong></p>`
@@ -287,7 +290,7 @@ export function renderPortalHtml(opts: RenderOptions): string {
     `<tr><td style="padding: 18px 22px;">` +
     `<p style="margin: 0; font-family: ${SERIF}; font-size: 19px; font-weight: 600; color: ${COLORS.heading};">Protocol portal</p>` +
     `<p style="margin: 6px 0 0; font-family: ${FONT}; font-size: 14px; color: ${COLORS.text}; line-height: 1.6;">All protocols, always up to date: ` +
-    `<a href="${escapeHtml(url)}" style="color: ${COLORS.heading}; font-weight: 600;">${escapeHtml(url)}</a></p>${pw}` +
+    `<a href="${escapeHtml(href)}" style="color: ${COLORS.heading}; font-weight: 600;">${escapeHtml(url)}</a></p>${pw}` +
     `</td></tr></table>`
   );
 }
@@ -315,7 +318,7 @@ export function renderProtocolsText(protocols: EmailProtocol[], opts: RenderOpti
     }
     return lines.join('\n');
   });
-  const portalUrl = safeUrl(opts.portalUrl ?? null);
+  const portalUrl = safeUrl(opts.portalLinkUrl ?? null) ?? safeUrl(opts.portalUrl ?? null);
   if (portalUrl) {
     const portal = [`Protocol portal: ${portalUrl}`];
     if (opts.portalPassword) portal.push(`Password: ${opts.portalPassword}`);

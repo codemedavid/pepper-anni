@@ -191,6 +191,18 @@ describe('rendering', () => {
     expect(text).toContain('Password: glow2026');
   });
 
+  it('uses the one-click portal link for the button and text, but shows the plain URL', () => {
+    const opts = {
+      portalUrl: 'https://pepperanni.com/protocols',
+      portalLinkUrl: 'https://pepperanni.com/protocols#access=abc.def',
+      portalPassword: 'glow2026',
+    };
+    const portal = renderPortalHtml(opts);
+    expect(portal).toContain('href="https://pepperanni.com/protocols#access=abc.def"');
+    expect(portal).toContain('>https://pepperanni.com/protocols</a>');
+    expect(renderProtocolsText([], opts)).toContain('Protocol portal: https://pepperanni.com/protocols#access=abc.def');
+  });
+
   it('omits the password line when there is none', () => {
     const text = renderProtocolsText([], { portalUrl: 'https://pepperanni.com/protocols', portalPassword: null });
     expect(text).not.toContain('Password');

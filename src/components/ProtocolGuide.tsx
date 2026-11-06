@@ -147,7 +147,12 @@ const ProtocolGuide: React.FC = () => {
 
 
 
-                {locked ? (
+                {locked && loading ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3" role="status">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500"></div>
+                        <p className="text-sm text-charcoal-600">Opening your protocols...</p>
+                    </div>
+                ) : locked ? (
                     <UnlockCard onUnlock={unlock} unlocking={unlocking} error={error} />
                 ) : (
                 <>

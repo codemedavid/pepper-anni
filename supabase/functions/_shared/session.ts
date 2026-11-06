@@ -1,11 +1,13 @@
 // Stateless signed session tokens for the admin dashboard and the protocol portal.
 //
 // Format: base64url(JSON payload) + "." + base64url(HMAC-SHA256(payload, protocol_session_secret))
-// Payload: { role: 'admin' | 'portal', pv: password_version, exp: unix seconds }
+// Payload: { role: 'admin' | 'portal' | 'portal_link', pv: password_version, exp: unix seconds }
+// 'portal_link' tokens go in the one-click portal link of protocol emails. They are only accepted by the
+// portal's `redeem` action (never as a session), and they are tied to the portal password version.
 // Changing a password bumps password_version, which invalidates every token issued before it.
 import { admin, getSecret } from "./http.ts";
 
-export type Role = "admin" | "portal";
+export type Role = "admin" | "portal" | "portal_link";
 export interface SessionPayload {
   role: Role;
   pv: number;
