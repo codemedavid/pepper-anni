@@ -293,8 +293,8 @@ const ProtocolGuide: React.FC = () => {
                                             </div>
                                         )}
 
-                                        {/* Text content (original) */}
-                                        {(!protocol.content_type || protocol.content_type === 'text') && (
+                                        {/* Text content: text protocols, and image protocols that also have text */}
+                                        {(!protocol.content_type || protocol.content_type === 'text' || !!protocol.dosage?.trim()) && (
                                             <>
                                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 mb-4">
                                                     <div className="bg-brand-50 rounded-xl p-3">

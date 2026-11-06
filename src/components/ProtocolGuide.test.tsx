@@ -220,9 +220,36 @@ describe('ProtocolGuide', () => {
       const ghkButton = protocolButtons.find(btn => btn.textContent?.includes('GHK-Cu Protocol'));
       await userEvent.click(ghkButton!);
 
-      // Image protocol should show image, not dosage card
+      // Image protocol with no text fields should show the image only, not the dosage card
       const img = screen.getByAltText('GHK-Cu Protocol protocol');
       expect(img).toBeInTheDocument();
+      expect(screen.queryByText('Dosage')).not.toBeInTheDocument();
+    });
+
+    it('shows both the image and the text for an image protocol that also has text', async () => {
+      const both = {
+        ...allMockProtocols[0],
+        id: 'proto-both',
+        name: 'Semax 10 mg',
+        category: 'Cognitive Enhancement',
+        dosage: 'Reconstitute 10 mg with 3 mL bacteriostatic water',
+        frequency: 'Daily, in the morning',
+        content_type: 'image' as const,
+        file_url: 'https://signed.example/semax.jpg',
+      };
+      mockCallEdge.mockImplementation((fn: string, body: { action: string }, opts?: { token?: string }) =>
+        body.action === 'list' && opts?.token
+          ? Promise.resolve({ protocols: [...allMockProtocols, both] })
+          : portalEdge(fn, body as { action: string; password?: string }, opts),
+      );
+      await renderUnlocked();
+
+      const button = screen.getAllByRole('button').find(btn => btn.textContent?.includes('Semax 10 mg'));
+      await userEvent.click(button!);
+
+      expect(screen.getByAltText('Semax 10 mg protocol')).toHaveAttribute('src', 'https://signed.example/semax.jpg');
+      expect(screen.getByText('Reconstitute 10 mg with 3 mL bacteriostatic water')).toBeInTheDocument();
+      expect(screen.getByText('Daily, in the morning')).toBeInTheDocument();
     });
   });
 

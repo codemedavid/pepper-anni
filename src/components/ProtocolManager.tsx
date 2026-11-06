@@ -342,8 +342,8 @@ const ProtocolManager: React.FC<ProtocolManagerProps> = ({ onBack }) => {
                             </div>
                         </div>
 
-                        {/* Text Content Fields */}
-                        {formData.content_type === 'text' && (
+                        {/* Text Content Fields (also shown for image protocols, so a guide can have both) */}
+                        {(formData.content_type === 'text' || formData.content_type === 'image') && (
                             <>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                     <div>
